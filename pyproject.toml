@@ -1,0 +1,39 @@
+[project]
+name = "inteligencia-territorial"
+version = "0.1.0"
+description = "Módulo de inteligencia territorial de Bogotá: fuentes oficiales, validación, fichas y mapa."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "httpx>=0.27",
+  "psycopg[binary]>=3.1",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+pruebas = [
+  "pytest>=8.0",
+  "respx>=0.21",
+]
+
+[project.scripts]
+territorial = "territorial.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["territorial*"]
+
+[tool.setuptools.package-data]
+territorial = ["sql/*.sql", "fuentes.yaml", "web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "bd: requiere PostgreSQL con PostGIS (variable TERRITORIAL_DB_PRUEBAS)",
+  "red: requiere acceso a los servicios oficiales de Bogotá (se ejecuta en tu computador)",
+]
+addopts = "-m 'not red'"

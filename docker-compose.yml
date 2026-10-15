@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - datos_bd:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Solo accesible desde tu propio equipo
+      - "127.0.0.1:${TERRITORIAL_PUERTO_BD:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    environment:
+      TERRITORIAL_DB: ${TERRITORIAL_DB}
+      TERRITORIAL_CONTACTO: ${TERRITORIAL_CONTACTO}
+      TERRITORIAL_DATOS: /datos
+      TERRITORIAL_DB_PRUEBAS: ${TERRITORIAL_DB_PRUEBAS}
+      TERRITORIAL_PERMITIR_SINTETICOS: ${TERRITORIAL_PERMITIR_SINTETICOS:-0}
+    volumes:
+      - ./datos:/datos
+    ports:
+      - "127.0.0.1:${TERRITORIAL_PUERTO:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  datos_bd:
