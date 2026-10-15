@@ -1,0 +1,18 @@
+# Entorno y secretos
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+
+# Datos descargados (no se versionan: se obtienen de las fuentes oficiales)
+datos/
+!datos/.gitkeep
+
+# Sistema
+.DS_Store
+Thumbs.db
