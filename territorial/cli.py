@@ -9,6 +9,8 @@ Comandos:
   cargar-archivo <fuente> <ruta> [--sintetico]
                                Carga un GeoJSON o CSV comprimido ya descargado.
   consistencia                 Informes de consistencia entre fuentes publicadas.
+  informe-fuentes              Registro de validación por fuente (JSON): metadatos, última carga,
+                               conteos, campos, SRID, validaciones, estado final y procedencia.
   procedencia                  Origen de cada versión publicada (oficial, sin procedencia, sintética).
   retirar-sinteticos --confirmar
                                Deja de publicar las versiones sintéticas sin borrarlas.
@@ -22,6 +24,8 @@ import argparse
 import json
 import sys
 from pathlib import Path
+
+import httpx
 
 from . import bd, config, fichas
 from .carga import cargar_desde_arcgis, cargar_desde_csv_zip, cargar_desde_geojson, retirar_sinteticos
@@ -57,6 +61,7 @@ def main(argv: list[str] | None = None) -> int:
                    help="Fuerza el SRID de origen del GeoJSON. Por defecto se usa el declarado en el archivo.")
     sub.add_parser("consistencia")
     sub.add_parser("procedencia")
+    sub.add_parser("informe-fuentes")
     sub.add_parser("demo-sintetica")
     r = sub.add_parser("retirar-sinteticos")
     r.add_argument("--confirmar", action="store_true", help="Necesario para aplicar el retiro.")
@@ -70,7 +75,14 @@ def main(argv: list[str] | None = None) -> int:
             sys.exit(f"{f.id} no es una fuente de descarga; usa 'territorial cargar {f.id}'.")
         extension = ".json" if f.tipo == "descarga_geojson" else ".csv.zip"
         destino = config.carpeta_datos() / f"{f.id}{extension}"
-        r = descargar_archivo(f.url, destino)
+        try:
+            r = descargar_archivo(f.url, destino)
+        except (httpx.HTTPError, OSError) as e:
+            causa = ("el proxy o la red local rechazó la conexión" if isinstance(e, httpx.ProxyError) else
+                     f"el servidor respondió {e.response.status_code}" if isinstance(e, httpx.HTTPStatusError) else
+                     "no hubo conexión con el servidor" if isinstance(e, httpx.TransportError) else str(e))
+            sys.exit(f"No se pudo descargar {f.id} desde {f.url}: {causa} ({type(e).__name__}: {e}). "
+                     "No se modificó ningún archivo ni la base de datos.")
         ficha = escribir_procedencia(r, f.id)
         _imprimir({"archivo": str(r.ruta), "bytes": r.bytes, "sha256": r.sha256, "status": r.status,
                    "procedencia": str(ficha)})
@@ -122,6 +134,8 @@ def main(argv: list[str] | None = None) -> int:
                 sys.exit("Retira de la consulta todas las versiones sintéticas publicadas (no borra nada). "
                          "Repite con --confirmar para aplicarlo.")
             _imprimir(retirar_sinteticos(conn))
+        elif args.comando == "informe-fuentes":
+            _imprimir(fichas.informe_fuentes(conn, registro))
         elif args.comando == "procedencia":
             for f in fichas.procedencia(conn):
                 marca = "OFICIAL" if f["oficial"] else f["origen"].upper()

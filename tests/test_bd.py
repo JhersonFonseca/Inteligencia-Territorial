@@ -133,14 +133,25 @@ def test_ficha_localidad_por_punto_interior(datos_cargados):
 
 
 def test_consistencia(datos_cargados):
-    inf = {i["informe"][:20]: i for i in fichas.consistencia(datos_cargados)}
+    todos = fichas.consistencia(datos_cargados)
+    inf = {i["informe"][:20]: i for i in todos[:3]}
     assert len(inf) == 3
+    por = {i["informe"]: i for i in todos}
+    integ = {f["fuente"]: f for f in por["Integridad de los códigos de manzana"]["fuentes"]}
+    assert integ["mr_manzana"]["longitudes"] == {"9": 4} and integ["mr_manzana"]["llaves_duplicadas"] == 0
+    assert integ["mr_manzana"]["no_numericos"] == 4  # los códigos sintéticos llevan la letra M
+    assert por["Manzanas del Mapa de Referencia sin estrato asignado en 2025"]["ejemplos"] == ["M00000004"]
+    assert por["Códigos de estratificación 2025 sin manzana en el Mapa de Referencia"]["registros"] == 0
+    l26 = por["Lotes de la tabla de predios 2026 sin relación lote-manzana"]
+    assert (l26["registros"], l26["predios_afectados"], l26["ejemplos"]) == (1, 2, ["L999"])
+    assert por["Manzanas citadas por la relación lote-manzana que no existen en la capa Manzana"]["registros"] == 0
     codigos = next(i for i in inf.values() if i["informe"].startswith("Códigos"))
     assert codigos["porcentaje"] == 100.0
     lotes = next(i for i in inf.values() if i["informe"].startswith("Lotes"))
     assert (lotes["lotes"], lotes["con_relacion"]) == (4, 3)  # L999 sin relación
     moda = next(i for i in inf.values() if i["informe"].startswith("Manzanas"))
     assert (moda["comparables"], moda["coinciden"]) == (2, 2)
+    assert moda["empates_en_estrato_mas_frecuente"] == 0 and moda["limitaciones"]
 
 
 def test_api(datos_cargados, api_cliente):
@@ -276,3 +287,21 @@ def test_retirar_sinteticos_no_borra_ni_toca_reales(conn, registro):
     assert conn.execute("SELECT estado FROM geo.version WHERE version_id=%s", (sint["version_id"],)).fetchone()["estado"] == "retirada"
     assert conn.execute("SELECT count(*) AS n FROM geo.objeto").fetchone()["n"] == antes
     assert not next(f for f in fichas.estado_fuentes(conn) if f["id"] == "mr_sector")["habilitada"]
+
+
+def test_informe_fuentes_registra_metadatos_carga_y_estado(conn, registro, tmp_path):
+    import json as _json
+    from territorial.carga import cargar_desde_geojson
+    f = registro["fuentes"]["sdp_estrato_manzana_2025"]
+    ruta = tmp_path / "e.json"
+    ruta.write_text(_json.dumps({"type": "FeatureCollection", "crs": {"type": "name", "properties": {"name": "EPSG:4686"}},
+                                 "features": [{"type": "Feature", **x} for x in s.ESTRATO_2025]}))
+    cargar_desde_geojson(conn, f, ruta, registro["dominio_estrato"])
+    inf = {x["fuente"]: x for x in fichas.informe_fuentes(conn, registro)}
+    e25 = inf["sdp_estrato_manzana_2025"]
+    assert e25["estado_final"] == "publicada" and e25["ultima_carga"]["srid"] == 4686
+    assert e25["ultima_carga"]["campos_disponibles"] == ["CODIGO_MANZANA", "ESTRATO"]
+    assert e25["procedencia"]["origen"] == "archivo_sin_procedencia"
+    assert any(v["regla"] == "llave_unica" and v["ok"] for v in e25["ultima_carga"]["validaciones"])
+    assert inf["sdp_estrato_manzana_2019_rest"]["estado_final"] == "deshabilitada"
+    assert inf["mr_localidad"]["ultima_carga"] is None

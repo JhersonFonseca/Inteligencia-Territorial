@@ -1,0 +1,19 @@
+# 2026-10-15T12:18:07-05:00
+--- GET /api/salud
+{"estado":"ok","version":"0.1.0","postgis":"POSTGIS=\"3.4.2 c19ce56\" [EXTENSION] PGSQL=\"160\" GEOS=\"3.12.1-CAPI-1.18.1\" PROJ=\"9.4.0 NETWORK_ENABLED=OFF URL_ENDPOINT=https://cdn.proj.org USER_WRITABLE_DIRECTORY=/var/lib/postgresql/.local/share/proj DATABASE_PATH=/usr/share/proj/proj.db\" LIBXML=\"2.9.14\" LIBJSON=\"0.17\" LIBPROTOBUF=\"1.4.1\" WAGYU=\"0.5.0 (Internal)\"","esquema_migrado":true
+HTTP 200
+--- GET /api/capas
+{"capas":[{"capa":"localidad","fuente":"mr_localidad","nombre":"Localidad","habilitada":false,"motivos":["No hay una versión que haya pasado todas las validaciones bloqueantes."],"advertencias":["El dato tiene más de 3 años (fecha del dato: 2022-08-05)."],"sintetico":false,"requiere_bbox":false},{"capa":"upl","fuente":"mr_upl","nombre":"Unidad de Planeamiento Local (UPL)","habilitada":false,"mo
+HTTP 200
+--- GET /api/procedencia
+{"fuentes":[{"fuente":"mr_localidad","habilitada":false,"motivos":["No hay una versión que haya pasado todas las validaciones bloqueantes."],"version_publicada":null,"origen":"sin_version","detalle":"No hay versión publicada.","oficial":false},{"fuente":"mr_lote_manzana","habilitada":false,"motivos":["No hay una versión que haya pasado todas las validaciones bloqueantes."],"version_publicada":n
+HTTP 200
+--- GET /api/capas/localidad/geojson
+{"detalle":"La fuente no está habilitada para consulta.","fuente":"mr_localidad","motivos":["No hay una versión que haya pasado todas las validaciones bloqueantes."]}
+HTTP 409
+--- GET /api/ficha/localidad/1
+{"detalle":"La fuente no está habilitada para consulta.","fuente":"mr_localidad","motivos":["No hay una versión que haya pasado todas las validaciones bloqueantes."]}
+HTTP 409
+--- GET /api/capas/estrato_2019/geojson?bbox=-74.5,3.7,-73.95,4.87
+{"detalle":"La fuente no está habilitada para consulta.","fuente":"sdp_estrato_manzana_2019_rest","motivos":["Licencia no verificada.","Pendiente bloqueante: La licencia del servicio no figura en el servicio ni en una ficha identificada.","No hay una versión que haya pasado todas las validaciones bloqueantes."]}
+HTTP 409

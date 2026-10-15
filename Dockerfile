@@ -8,6 +8,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY territorial ./territorial
 COPY tests ./tests
+COPY herramientas ./herramientas
 
 RUN pip install --no-cache-dir ".[pruebas]"
 

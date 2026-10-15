@@ -424,6 +424,14 @@ async function iniciarCapas() {
     }
     pintarPanelCapas(lista);
     pintarAvisoSintetico();
+    if (!lista.some((c) => c.habilitada)) {
+      const el = $("aviso-mapa-error");
+      el.innerHTML = "<strong>No hay capas territoriales habilitadas.</strong> Ninguna fuente tiene todavía " +
+        "una versión validada (ver «Fuentes no habilitadas»). Carga las fuentes oficiales con " +
+        "<code>territorial cargar</code> y <code>territorial cargar-archivo</code>.";
+      el.hidden = false;
+      estado.sinCapas = true;
+    }
     if (mapa) await refrescarTodo();
   } catch (e) {
     registrarError("API de capas", e);

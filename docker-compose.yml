@@ -25,6 +25,10 @@ services:
       TERRITORIAL_DATOS: /datos
       TERRITORIAL_DB_PRUEBAS: ${TERRITORIAL_DB_PRUEBAS}
       TERRITORIAL_PERMITIR_SINTETICOS: ${TERRITORIAL_PERMITIR_SINTETICOS:-0}
+      # Proxy corporativo (opcional). Vacío = conexión directa. La base de datos no pasa por el proxy.
+      HTTPS_PROXY: ${TERRITORIAL_HTTPS_PROXY:-}
+      HTTP_PROXY: ${TERRITORIAL_HTTP_PROXY:-}
+      NO_PROXY: db,localhost,127.0.0.1
     volumes:
       - ./datos:/datos
     ports:

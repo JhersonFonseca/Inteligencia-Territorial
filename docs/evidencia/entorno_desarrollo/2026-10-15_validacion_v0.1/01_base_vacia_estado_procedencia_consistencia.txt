@@ -1,0 +1,48 @@
+{
+  "aplicados": [
+    "001_esquema.sql",
+    "002_retiro_sinteticos.sql"
+  ],
+  "postgis": "POSTGIS=\"3.4.2 c19ce56\" [EXTENSION] PGSQL=\"160\" GEOS=\"3.12.1-CAPI-1.18.1\" PROJ=\"9.4.0 NETWORK_ENABLED=OFF URL_ENDPOINT=https://cdn.proj.org USER_WRITABLE_DIRECTORY=/var/lib/postgresql/.local/share/proj DATABASE_PATH=/usr/share/proj/proj.db\" LIBXML=\"2.9.14\" LIBJSON=\"0.17\" LIBPROTOBUF=\"1.4.1\" WAGYU=\"0.5.0 (Internal)\""
+}
+{
+  "fuentes_sincronizadas": 8
+}
+--- estado
+mr_localidad                       NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+mr_lote_manzana                    NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+mr_manzana                         NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+mr_sector                          NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+mr_upl                             NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+sdp_estrato_manzana_2019_rest      NO HABILITADA
+    - Licencia no verificada.
+    - Pendiente bloqueante: La licencia del servicio no figura en el servicio ni en una ficha identificada.
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+sdp_estrato_manzana_2025           NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+sdp_estrato_predio_2026            NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+--- procedencia
+mr_localidad                       SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+mr_lote_manzana                    SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+mr_manzana                         SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+mr_sector                          SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+mr_upl                             SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+sdp_estrato_manzana_2019_rest      SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+sdp_estrato_manzana_2025           SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+sdp_estrato_predio_2026            SIN_VERSION              no habilitada  versión None
+    No hay versión publicada.
+--- consistencia
+[]

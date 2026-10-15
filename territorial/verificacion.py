@@ -76,11 +76,13 @@ def comprobar_fuentes(modo: str, fuentes: list[dict], procedencia: list[dict]) -
 
 def comprobar_interfaz(modo: str, estado_ui: dict, franja_visible: bool) -> list[dict]:
     capas_sint = [c["nombre"] for c in estado_ui["capas"].values() if c.get("sintetico")]
+    cargadas = [c["nombre"] for c in estado_ui["capas"].values() if c.get("estado") == "cargada" and c.get("n")]
     if modo == "reales":
         return [
             _r("Sin franja de datos sintéticos", not franja_visible, f"franja visible: {franja_visible}"),
             _r("Ninguna capa del mapa marcada como sintética", not capas_sint,
-               f"capas sintéticas: {capas_sint}" if capas_sint else "todas con datos oficiales"),
+               f"capas sintéticas: {capas_sint}" if capas_sint else
+               f"capas cargadas sin marca sintética: {cargadas}" if cargadas else "no hay capas con datos cargadas"),
         ]
     return [_r("Franja de datos sintéticos visible", franja_visible and bool(capas_sint),
                f"franja visible: {franja_visible}; capas sintéticas: {capas_sint}")]

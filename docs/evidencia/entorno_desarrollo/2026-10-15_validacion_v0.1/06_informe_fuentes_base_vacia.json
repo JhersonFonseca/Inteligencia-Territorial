@@ -1,0 +1,246 @@
+[
+  {
+    "fuente": "mr_localidad",
+    "nombre": "Localidad",
+    "entidad": "Secretaría Distrital de Planeación - SDP (Mapa de Referencia, IDECA)",
+    "tipo": "arcgis_rest",
+    "url": "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/48",
+    "ficha_url": "https://datosabiertos.bogota.gov.co/dataset/mapa-de-referencia",
+    "licencia": "CC BY 4.0",
+    "licencia_verificada": true,
+    "fecha_dato": "2022-08-05",
+    "campos_registrados": {
+      "llave": "LOCCODIGO",
+      "nombre": "LOCNOMBRE"
+    },
+    "conteo_verificado_en_registro": null,
+    "pendientes": [],
+    "ultima_carga": {
+      "version": 1,
+      "estado": "cuarentena",
+      "sintetica": false,
+      "consultada_en": "2026-10-15T12:17:27-05:00",
+      "registros_esperados": null,
+      "registros_recibidos": null,
+      "sha256_o_huella": null,
+      "campos_disponibles": null,
+      "srid": null,
+      "srid_nota": null,
+      "validaciones": [],
+      "motivo_cuarentena": "Error durante la carga: ErrorServicio: Falló tras 3 intentos: https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/48 (403 Forbidden)"
+    },
+    "estado_final": "en cuarentena",
+    "motivos_no_habilitada": [
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  },
+  {
+    "fuente": "mr_upl",
+    "nombre": "Unidad de Planeamiento Local (UPL)",
+    "entidad": "Secretaría Distrital de Planeación - SDP (Mapa de Referencia, IDECA)",
+    "tipo": "arcgis_rest",
+    "url": "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/44",
+    "ficha_url": "https://datosabiertos.bogota.gov.co/dataset/mapa-de-referencia",
+    "licencia": "CC BY 4.0",
+    "licencia_verificada": true,
+    "fecha_dato": "2023-02-15",
+    "campos_registrados": {
+      "llave": "CODIGO_UPL",
+      "nombre": "NOMBRE"
+    },
+    "conteo_verificado_en_registro": null,
+    "pendientes": [],
+    "ultima_carga": null,
+    "estado_final": "deshabilitada",
+    "motivos_no_habilitada": [
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  },
+  {
+    "fuente": "mr_sector",
+    "nombre": "Sector catastral",
+    "entidad": "Unidad Administrativa Especial de Catastro Distrital - UAECD (Mapa de Referencia, IDECA)",
+    "tipo": "arcgis_rest",
+    "url": "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/37",
+    "ficha_url": "https://datosabiertos.bogota.gov.co/dataset/mapa-de-referencia",
+    "licencia": "CC BY 4.0",
+    "licencia_verificada": true,
+    "fecha_dato": "2026-07-28",
+    "campos_registrados": {
+      "llave": "SCACODIGO",
+      "nombre": "SCANOMBRE"
+    },
+    "conteo_verificado_en_registro": null,
+    "pendientes": [],
+    "ultima_carga": null,
+    "estado_final": "deshabilitada",
+    "motivos_no_habilitada": [
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  },
+  {
+    "fuente": "mr_manzana",
+    "nombre": "Manzana",
+    "entidad": "Unidad Administrativa Especial de Catastro Distrital - UAECD (Mapa de Referencia, IDECA)",
+    "tipo": "arcgis_rest",
+    "url": "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/40",
+    "ficha_url": "https://datosabiertos.bogota.gov.co/dataset/mapa-de-referencia",
+    "licencia": "CC BY 4.0",
+    "licencia_verificada": true,
+    "fecha_dato": "2026-07-28",
+    "campos_registrados": {
+      "llave": "MANCODIGO",
+      "padre": "SECCODIGO"
+    },
+    "conteo_verificado_en_registro": null,
+    "pendientes": [],
+    "ultima_carga": null,
+    "estado_final": "deshabilitada",
+    "motivos_no_habilitada": [
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  },
+  {
+    "fuente": "sdp_estrato_manzana_2025",
+    "nombre": "Estrato asignado por manzana (2025)",
+    "entidad": "Secretaría Distrital de Planeación - SDP",
+    "tipo": "descarga_geojson",
+    "url": "https://datosabiertos.bogota.gov.co/dataset/55467552-0af4-4524-a390-a2956035744e/resource/29f2d770-bd5d-4450-9e95-8737167ba12f/download/manzanaestratificacion.json",
+    "ficha_url": "https://datosabiertos.bogota.gov.co/dataset/estratificacion-para-bogota",
+    "licencia": "CC BY 4.0",
+    "licencia_verificada": true,
+    "fecha_dato": "2025-11-20",
+    "campos_registrados": {
+      "llave": "CODIGO_MANZANA",
+      "estrato": "ESTRATO"
+    },
+    "conteo_verificado_en_registro": null,
+    "pendientes": [],
+    "ultima_carga": null,
+    "estado_final": "deshabilitada",
+    "motivos_no_habilitada": [
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  },
+  {
+    "fuente": "mr_lote_manzana",
+    "nombre": "Relación lote - manzana",
+    "entidad": "Unidad Administrativa Especial de Catastro Distrital - UAECD (Mapa de Referencia, IDECA)",
+    "tipo": "arcgis_tabla",
+    "url": "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/38",
+    "ficha_url": "https://datosabiertos.bogota.gov.co/dataset/mapa-de-referencia",
+    "licencia": "CC BY 4.0",
+    "licencia_verificada": true,
+    "fecha_dato": "2026-07-28",
+    "campos_registrados": {
+      "llave": "LOTCODIGO",
+      "manzana": "MANZCODIGO"
+    },
+    "conteo_verificado_en_registro": null,
+    "pendientes": [],
+    "ultima_carga": null,
+    "estado_final": "deshabilitada",
+    "motivos_no_habilitada": [
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  },
+  {
+    "fuente": "sdp_estrato_predio_2026",
+    "nombre": "Predios residenciales por estrato (2026)",
+    "entidad": "Secretaría Distrital de Planeación - SDP",
+    "tipo": "descarga_csv_zip",
+    "url": "https://datosabiertos.bogota.gov.co/dataset/68ccdaca-5403-4fe6-b727-be01b5d28f15/resource/f1d91324-af38-405e-ad13-026c50448ed1/download/esoc.csv.zip",
+    "ficha_url": "https://datosabiertos.bogota.gov.co/dataset/estrato-socioeconomico-bogota-d-c",
+    "licencia": "CC BY 4.0",
+    "licencia_verificada": true,
+    "fecha_dato": "2026-07-22",
+    "campos_registrados": {
+      "lote": "ESOCLOTE",
+      "estrato": "ESOESTRATO"
+    },
+    "conteo_verificado_en_registro": null,
+    "pendientes": [],
+    "ultima_carga": null,
+    "estado_final": "deshabilitada",
+    "motivos_no_habilitada": [
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  },
+  {
+    "fuente": "sdp_estrato_manzana_2019_rest",
+    "nombre": "Estratificación por manzana, servicio histórico (dato de 2019)",
+    "entidad": "Secretaría Distrital de Planeación - SDP",
+    "tipo": "arcgis_rest",
+    "url": "https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/ordenamientoterritorial/estratificacion/MapServer/1",
+    "ficha_url": null,
+    "licencia": null,
+    "licencia_verificada": false,
+    "fecha_dato": "2019-08-15",
+    "campos_registrados": {
+      "llave": "CODIGO_MANZANA",
+      "estrato": "ESTRATO"
+    },
+    "conteo_verificado_en_registro": 45051,
+    "pendientes": [
+      {
+        "texto": "La licencia del servicio no figura en el servicio ni en una ficha identificada.",
+        "bloqueante": true
+      }
+    ],
+    "ultima_carga": null,
+    "estado_final": "deshabilitada",
+    "motivos_no_habilitada": [
+      "Licencia no verificada.",
+      "Pendiente bloqueante: La licencia del servicio no figura en el servicio ni en una ficha identificada.",
+      "No hay una versión que haya pasado todas las validaciones bloqueantes."
+    ],
+    "procedencia": {
+      "origen": "sin_version",
+      "oficial": false,
+      "detalle": "No hay versión publicada.",
+      "version_publicada": null
+    }
+  }
+]

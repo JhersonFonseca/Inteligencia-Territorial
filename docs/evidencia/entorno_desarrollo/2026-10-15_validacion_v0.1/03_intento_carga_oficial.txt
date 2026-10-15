@@ -1,0 +1,15 @@
+# 2026-10-15T12:17:23-05:00 — intento de carga real desde el entorno de desarrollo
+{
+  "version_id": 1,
+  "estado": "cuarentena",
+  "motivo": "Error durante la carga: ErrorServicio: Falló tras 3 intentos: https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/48 (403 Forbidden)"
+}
+--- descarga 2025
+  File "/usr/local/lib/python3.13/dist-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ProxyError: 403 Forbidden
+--- estado tras los intentos
+mr_localidad                       NO HABILITADA
+    - No hay una versión que haya pasado todas las validaciones bloqueantes.
+    ! Última versión 1 en cuarentena: Error durante la carga: ErrorServicio: Falló tras 3 intentos: https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/48 (403 Forbidden)
+mr_lote_manzana                    NO HABILITADA

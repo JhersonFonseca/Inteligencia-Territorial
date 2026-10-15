@@ -71,6 +71,10 @@ def clasificar(url: str, modo: str, resultado=None) -> str:
     return "externo"
 
 
+class PasoFallido(RuntimeError):
+    """Un paso de la verificación no puede continuar; el informe registra la causa."""
+
+
 def api_json(base: str, ruta: str) -> tuple[int, dict]:
     try:
         with urllib.request.urlopen(base.rstrip("/") + ruta, timeout=60) as r:
@@ -110,7 +114,8 @@ async def verificar(args) -> dict:
 
     salida = Path(args.salida)
     salida.mkdir(parents=True, exist_ok=True)
-    consola, red, comprobaciones = [], [], []
+    consola, red = [], []
+    comprobaciones = args.parciales  # se conservan aunque la verificación se interrumpa
 
     def comprobar(nombre: str, ok: bool, detalle: str = "") -> None:
         comprobaciones.append({"comprobacion": nombre, "ok": bool(ok), "detalle": detalle})
@@ -135,8 +140,9 @@ async def verificar(args) -> dict:
     print("--- Navegador ---")
 
     async with async_playwright() as p:
+        opciones = {"channel": "msedge"} if args.navegador == "msedge" else {}
         nav = await p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader",
-                                            "--ignore-gpu-blocklist"])
+                                            "--ignore-gpu-blocklist"], **opciones)
         pagina = await nav.new_page(viewport={"width": 1400, "height": 850})
         pagina.on("console", lambda m: consola.append({"tipo": m.type, "texto": m.text[:300]}))
         pagina.on("pageerror", lambda e: consola.append({"tipo": "pageerror", "texto": str(e)[:300]}))
@@ -200,7 +206,12 @@ async def verificar(args) -> dict:
 
         # Buscador → ficha → encuadre
         await pagina.fill("#q", args.buscar)
-        await pagina.wait_for_selector("#resultados li[data-nivel]", timeout=10000)
+        await pagina.wait_for_selector("#resultados li", timeout=15000)
+        if await pagina.locator("#resultados li[data-nivel]").count() == 0:
+            comprobar(f"El buscador encuentra '{args.buscar}'", False, "sin resultados en las fuentes habilitadas")
+            raise PasoFallido(f"El buscador no devolvió resultados para '{args.buscar}' en las fuentes habilitadas.")
+        comprobar(f"El buscador encuentra '{args.buscar}'", True,
+                  f"{await pagina.locator('#resultados li[data-nivel]').count()} resultados")
         primero = pagina.locator("#resultados li[data-nivel]").first
         nivel_b, codigo_b = await primero.get_attribute("data-nivel"), await primero.get_attribute("data-codigo")
         await primero.click()
@@ -280,6 +291,7 @@ async def verificar(args) -> dict:
         "tipo_evidencia": {"reales": "datos_oficiales", "sinteticos": "demostracion_sintetica"}[args.datos],
         "fecha": datetime.now().isoformat(timespec="seconds"), "url": args.url,
         "commit": commit_actual(), "version_api": salud.get("version"), "postgis": salud.get("postgis"),
+        "navegador": args.navegador,
         "procedencia": proc,
         "modo_mapa_base": args.mapa_base,
         "nota_modo": {"simulado": "Teselas grises generadas localmente; no es cartografía real.",
@@ -304,6 +316,8 @@ def main() -> int:
     p.add_argument("--datos", choices=["reales", "sinteticos"], required=True,
                    help="Tipo de evidencia: reales (exige procedencia oficial) o sinteticos (demostración).")
     p.add_argument("--url", default="http://localhost:8000/")
+    p.add_argument("--navegador", choices=["chromium", "msedge"], default="chromium",
+                   help="msedge usa el Edge instalado en Windows (útil si no se puede descargar Chromium).")
     p.add_argument("--mapa-base", choices=["real", "bloqueado", "sin-respuesta", "simulado"], default="real")
     p.add_argument("--buscar", default="sintetico", help="Texto para el buscador (p. ej. CHAPINERO con datos reales).")
     p.add_argument("--zoom-manzanas", type=float, default=16.0)
@@ -312,16 +326,18 @@ def main() -> int:
     if motivo := validar_argumentos(args):
         print(f"RECHAZADO: {motivo}")
         return 2
+    args.parciales = []
     try:
         informe = asyncio.run(verificar(args))
     except Exception as e:  # noqa: BLE001 — la causa queda registrada, nunca se sustituyen datos
         causa = (f"No se pudo conectar con la API en {args.url}: ¿está levantado Docker Compose?"
-                 if isinstance(e, urllib.error.URLError) else
+                 if isinstance(e, urllib.error.URLError) else str(e) if isinstance(e, PasoFallido) else
                  "Un paso no terminó a tiempo (revisa la última captura y la consola)."
                  if type(e).__name__ == "TimeoutError" else "Error inesperado durante la verificación.")
         informe = {"tipo_evidencia": {"reales": "datos_oficiales", "sinteticos": "demostracion_sintetica"}[args.datos],
                    "fecha": datetime.now().isoformat(timespec="seconds"), "url": args.url, "commit": commit_actual(),
                    "aprobado": False, "interrumpida": True, "causa": causa,
+                   "comprobaciones_hasta_la_interrupcion": args.parciales,
                    "error": f"{type(e).__name__}: {str(e)[:500]}"}
         Path(args.salida).mkdir(parents=True, exist_ok=True)
         (Path(args.salida) / "informe.json").write_text(json.dumps(informe, ensure_ascii=False, indent=2),

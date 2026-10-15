@@ -54,3 +54,24 @@ def test_descarga_completa_calcula_hash(tmp_path):
     respx.get("https://x/archivo").respond(200, content=b"hola")
     r = descargar_archivo("https://x/archivo", tmp_path / "a.bin", httpx.Client())
     assert r.bytes == 4 and r.sha256.startswith("b221d9db")
+
+
+@respx.mock
+def test_fallo_de_red_no_deja_temporal_ni_toca_el_archivo_anterior(tmp_path):
+    destino = tmp_path / "archivo.zip"
+    destino.write_bytes(b"version anterior")
+    respx.get("https://x/archivo").mock(side_effect=httpx.ConnectError("sin red"))
+    with pytest.raises(httpx.ConnectError):
+        descargar_archivo("https://x/archivo", destino, httpx.Client())
+    assert destino.read_bytes() == b"version anterior"
+    assert not (tmp_path / "archivo.zip.parcial").exists()
+
+
+def test_cli_descargar_informa_la_causa_sin_traceback(monkeypatch, capsys):
+    from territorial import cli
+    def falla(url, destino, cliente=None):
+        raise httpx.ProxyError("403 Forbidden")
+    monkeypatch.setattr(cli, "descargar_archivo", falla)
+    with pytest.raises(SystemExit) as e:
+        cli.main(["descargar", "sdp_estrato_manzana_2025"])
+    assert "proxy o la red local" in str(e.value.code) and "No se modificó" in str(e.value.code)

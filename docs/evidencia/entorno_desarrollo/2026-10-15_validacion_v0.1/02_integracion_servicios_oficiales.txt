@@ -1,0 +1,19 @@
+# 2026-10-15T12:17:19-05:00 — intento desde el entorno de desarrollo (sin acceso a los servicios oficiales)
+============================= test session starts ==============================
+platform linux -- Python 3.13.16, pytest-9.1.1, pluggy-1.7.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/claude/inteligencia-territorial
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, respx-0.23.1
+collecting ... collected 71 items / 61 deselected / 10 selected
+
+tests/test_integracion_red.py::test_capa_arcgis_consultable_con_campos_y_paginacion[mr_localidad] FAILED
+
+=================================== FAILURES ===================================
+E   territorial.arcgis.ErrorServicio: Falló tras 3 intentos: https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/48 (403 Forbidden)
+/home/claude/inteligencia-territorial/territorial/arcgis.py:78: territorial.arcgis.ErrorServicio: Falló tras 3 intentos: https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/48 (403 Forbidden)
+=========================== short test summary info ============================
+FAILED tests/test_integracion_red.py::test_capa_arcgis_consultable_con_campos_y_paginacion[mr_localidad]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+======================= 1 failed, 61 deselected in 4.03s =======================

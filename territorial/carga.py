@@ -229,8 +229,11 @@ def cargar_desde_arcgis(conn, fuente: Fuente, dominio: dict[int, str],
         r = cliente.descargar(fuente.url, list(fuente.campos.values()), con_geometria=con_geometria)
     except Exception as e:  # noqa: BLE001
         return _cuarentena_por_error(conn, fuente.id, e, False, cliente.bitacora)
-    return cargar_features(conn, fuente, r.features, r.campos_servicio, dominio, r.esperados, r.bitacora,
-                           con_geometria=con_geometria)
+    resumen = {"resumen": {"campos_disponibles": r.campos_servicio,
+                           "srid": 4326 if con_geometria else None,
+                           "srid_nota": "solicitado al servicio con outSR=4326" if con_geometria else "tabla sin geometría"}}
+    return cargar_features(conn, fuente, r.features, r.campos_servicio, dominio, r.esperados,
+                           r.bitacora + [resumen], con_geometria=con_geometria)
 
 
 def cargar_desde_geojson(conn, fuente: Fuente, ruta, dominio: dict[int, str], srid_origen: int | None = None,
@@ -242,7 +245,9 @@ def cargar_desde_geojson(conn, fuente: Fuente, ruta, dominio: dict[int, str], sr
         return _cuarentena_por_error(conn, fuente.id, e, sintetico)
     sha = sha256_archivo(ruta)
     procedencia = leer_procedencia(ruta, sha, fuente.id, fuente.url)
-    bitacora = [{"archivo": str(ruta), "sha256": sha, "procedencia": procedencia}]
+    bitacora = [{"archivo": str(ruta), "sha256": sha, "procedencia": procedencia},
+                {"resumen": {"campos_disponibles": campos, "srid": srid_origen or srid_archivo,
+                             "srid_nota": "declarado en el archivo" if not srid_origen else "indicado con --srid"}}]
     return cargar_features(conn, fuente, features, campos, dominio, None, bitacora,
                            hash_contenido=sha, srid_origen=srid_origen or srid_archivo,
                            sintetico=sintetico, extra=[_validacion_procedencia(procedencia, sintetico)])
@@ -258,7 +263,8 @@ def cargar_desde_csv_zip(conn, fuente: Fuente, ruta, dominio: dict[int, str],
                                                                fuente.campos["estrato"])
         sha = sha256_archivo(ruta)
         procedencia = leer_procedencia(ruta, sha, fuente.id, fuente.url)
-        bitacora = [{"archivo": str(ruta), "sha256": sha, "filas": filas, "procedencia": procedencia}]
+        bitacora = [{"archivo": str(ruta), "sha256": sha, "filas": filas, "procedencia": procedencia},
+                    {"resumen": {"campos_disponibles": columnas, "srid": None, "srid_nota": "tabla sin geometría"}}]
         resultados = [v.campos_presentes(fuente.campos.values(), columnas)]
         if resultados[0].ok:
             resultados += [v.no_vacio(filas),

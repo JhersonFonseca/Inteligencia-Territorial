@@ -1,0 +1,82 @@
+# 2026-10-15T12:21:51-05:00 — pruebas en el entorno de desarrollo tras las correcciones de esta fase
+============================= test session starts ==============================
+platform linux -- Python 3.13.16, pytest-9.1.1, pluggy-1.7.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/claude/inteligencia-territorial
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, respx-0.23.1
+collecting ... collected 74 items / 10 deselected / 64 selected
+
+tests/test_arcgis.py::test_pagina_por_offset_ordenado_por_oid_hasta_el_conteo PASSED [  1%]
+tests/test_arcgis.py::test_tamano_de_pagina_limitado_a_2000 PASSED       [  3%]
+tests/test_arcgis.py::test_perdida_de_registros_se_detecta_por_conteo PASSED [  4%]
+tests/test_arcgis.py::test_reintenta_errores_transitorios_y_registra_bitacora PASSED [  6%]
+tests/test_arcgis.py::test_error_de_servicio_en_json_con_codigo_500_se_reintenta PASSED [  7%]
+tests/test_arcgis.py::test_error_400_no_se_reintenta PASSED              [  9%]
+tests/test_arcgis.py::test_falla_tras_agotar_reintentos PASSED           [ 10%]
+tests/test_arcgis.py::test_rechaza_capas_solo_visuales[m0] PASSED        [ 12%]
+tests/test_arcgis.py::test_rechaza_capas_solo_visuales[m1] PASSED        [ 14%]
+tests/test_arcgis.py::test_rechaza_campos_inexistentes PASSED            [ 15%]
+tests/test_arcgis.py::test_rechaza_capas_sin_paginacion PASSED           [ 17%]
+tests/test_arcgis.py::test_tabla_sin_geometria_usa_json_de_esri PASSED   [ 18%]
+tests/test_bd.py::test_migracion_idempotente PASSED                      [ 20%]
+tests/test_bd.py::test_publicacion_y_reemplazo PASSED                    [ 21%]
+tests/test_bd.py::test_fallo_deja_en_cuarentena_y_conserva_version_anterior[perdida] PASSED [ 23%]
+tests/test_bd.py::test_fallo_deja_en_cuarentena_y_conserva_version_anterior[duplicado] PASSED [ 25%]
+tests/test_bd.py::test_fallo_deja_en_cuarentena_y_conserva_version_anterior[estrato_invalido] PASSED [ 26%]
+tests/test_bd.py::test_fallo_deja_en_cuarentena_y_conserva_version_anterior[fuera_de_bogota] PASSED [ 28%]
+tests/test_bd.py::test_fallo_deja_en_cuarentena_y_conserva_version_anterior[campo_faltante] PASSED [ 29%]
+tests/test_bd.py::test_error_inesperado_deja_cuarentena_sin_tocar_la_publicada PASSED [ 31%]
+tests/test_bd.py::test_geometria_invalida_se_corrige_y_se_registra PASSED [ 32%]
+tests/test_bd.py::test_licencia_pendiente_carga_pero_no_habilita PASSED  [ 34%]
+tests/test_bd.py::test_csv_2026_no_guarda_chip_y_agrega_por_manzana_oficial PASSED [ 35%]
+tests/test_bd.py::test_ficha_manzana_separa_las_fuentes PASSED           [ 37%]
+tests/test_bd.py::test_ficha_sector_usa_codigo_de_sector PASSED          [ 39%]
+tests/test_bd.py::test_ficha_localidad_por_punto_interior PASSED         [ 40%]
+tests/test_bd.py::test_consistencia PASSED                               [ 42%]
+tests/test_bd.py::test_api PASSED                                        [ 43%]
+tests/test_bd.py::test_api_sin_datos_muestra_capas_no_validadas PASSED   [ 45%]
+tests/test_bd.py::test_sintetico_no_reemplaza_una_version_real PASSED    [ 46%]
+tests/test_bd.py::test_demo_sintetica_se_niega_si_hay_datos_reales PASSED [ 48%]
+tests/test_bd.py::test_dato_real_reemplaza_al_sintetico_y_se_marca PASSED [ 50%]
+tests/test_bd.py::test_pagina_usa_maplibre_local_y_no_un_cdn PASSED      [ 51%]
+tests/test_bd.py::test_procedencia_distingue_descarga_verificada_archivo_suelto_y_sintetico PASSED [ 53%]
+tests/test_bd.py::test_procedencia_de_servicio_arcgis PASSED             [ 54%]
+tests/test_bd.py::test_api_procedencia_de_la_demostracion PASSED         [ 56%]
+tests/test_bd.py::test_retirar_sinteticos_no_borra_ni_toca_reales PASSED [ 57%]
+tests/test_bd.py::test_informe_fuentes_registra_metadatos_carga_y_estado PASSED [ 59%]
+tests/test_descargas.py::test_csv_agrega_por_lote_y_estrato_sin_conservar_chip PASSED [ 60%]
+tests/test_descargas.py::test_csv_con_coma_como_separador PASSED         [ 62%]
+tests/test_descargas.py::test_csv_sin_columnas_esperadas PASSED          [ 64%]
+tests/test_descargas.py::test_geojson_detecta_srid PASSED                [ 65%]
+tests/test_descargas.py::test_descarga_incompleta_no_deja_archivo_final PASSED [ 67%]
+tests/test_descargas.py::test_descarga_completa_calcula_hash PASSED      [ 68%]
+tests/test_descargas.py::test_fallo_de_red_no_deja_temporal_ni_toca_el_archivo_anterior PASSED [ 70%]
+tests/test_descargas.py::test_cli_descargar_informa_la_causa_sin_traceback PASSED [ 71%]
+tests/test_validacion.py::test_conteo PASSED                             [ 73%]
+tests/test_validacion.py::test_llaves_duplicadas_y_vacias PASSED         [ 75%]
+tests/test_validacion.py::test_dominio_estrato PASSED                    [ 76%]
+tests/test_validacion.py::test_campos_presentes PASSED                   [ 78%]
+tests/test_validacion.py::test_geometria_tipo_y_extension PASSED         [ 79%]
+tests/test_validacion.py::test_licencia_y_fecha_no_bloquean_la_carga PASSED [ 81%]
+tests/test_validacion.py::test_habilitacion PASSED                       [ 82%]
+tests/test_validacion.py::test_advertencia_de_antiguedad PASSED          [ 84%]
+tests/test_validacion.py::test_registro_separa_las_tres_fuentes_de_estrato_y_bloquea_2019 PASSED [ 85%]
+tests/test_verificacion.py::test_todo_oficial_aprueba PASSED             [ 87%]
+tests/test_verificacion.py::test_demostracion_sintetica_no_aprueba_como_real PASSED [ 89%]
+tests/test_verificacion.py::test_archivo_sin_procedencia_no_aprueba PASSED [ 90%]
+tests/test_verificacion.py::test_fuente_en_cuarentena_no_aprueba_y_explica_la_causa PASSED [ 92%]
+tests/test_verificacion.py::test_fuente_con_licencia_pendiente_habilitada_no_aprueba_en_ningun_modo PASSED [ 93%]
+tests/test_verificacion.py::test_interfaz_con_franja_no_aprueba_como_real PASSED [ 95%]
+tests/test_verificacion.py::test_ficha_real PASSED                       [ 96%]
+tests/test_verificacion.py::test_ficha_con_version_distinta_o_codigo_de_demostracion_no_aprueba PASSED [ 98%]
+tests/test_verificacion.py::test_herramienta_rechaza_combinaciones_enganosas PASSED [100%]
+
+=============================== warnings summary ===============================
+tests/test_bd.py::test_api
+  /usr/local/lib/python3.13/dist-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================= 64 passed, 10 deselected, 1 warning in 3.38s =================

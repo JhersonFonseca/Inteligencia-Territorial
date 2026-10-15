@@ -316,9 +316,89 @@ def consistencia(conn) -> list[dict[str, Any]]:
                       count(*) FILTER (WHERE (e.atributos->>'estrato')::int = moda.estrato) AS coinciden
                FROM moda JOIN geo.v_objeto_publicado e
                  ON e.fuente_id='sdp_estrato_manzana_2025' AND e.llave = moda.manzana""").fetchone()
+        empates = conn.execute(
+            """SELECT count(*) AS n FROM (
+                 SELECT manzana FROM geo.v_predios_manzana p
+                 WHERE n_predios = (SELECT max(n_predios) FROM geo.v_predios_manzana q WHERE q.manzana = p.manzana)
+                 GROUP BY manzana HAVING count(*) > 1) t""").fetchone()["n"]
         informes.append({"informe": "Manzanas donde el estrato 2025 coincide con el estrato más frecuente "
                                     "de sus predios 2026 (comparación, no fusión)", **r,
-                         "porcentaje": round(100 * r["coinciden"] / r["comparables"], 2) if r["comparables"] else None})
+                         "porcentaje": round(100 * r["coinciden"] / r["comparables"], 2) if r["comparables"] else None,
+                         "empates_en_estrato_mas_frecuente": empates,
+                         "limitaciones": [
+                             "Compara la clasificación de la manzana (2025) con la de sus predios residenciales "
+                             "(2026): son fechas, unidades y reglas distintas (atípicos, recursos, VIP); "
+                             "una diferencia no implica un error en ninguna de las dos fuentes.",
+                             "En las manzanas con empate en el estrato más frecuente se toma el estrato menor; "
+                             "el número de empates se informa para dimensionar ese efecto.",
+                             "Solo entran manzanas con predios relacionados en 2026 y con estrato en 2025."]})
+    informes += consistencia_detalle(conn, hay)
+    return informes
+
+
+def _ejemplos(conn, sql: str) -> tuple[int, list[str]]:
+    n = conn.execute(f"SELECT count(*) AS n FROM ({sql}) t").fetchone()["n"]
+    ej = [r["codigo"] for r in conn.execute(f"SELECT codigo FROM ({sql}) t ORDER BY codigo LIMIT 10")]
+    return n, ej
+
+
+def consistencia_detalle(conn, hay) -> list[dict[str, Any]]:
+    """Integridad de códigos y registros sin correspondencia, con ejemplos. Solo describe: no corrige."""
+    informes = []
+    columnas = {"mr_manzana": "llave", "sdp_estrato_manzana_2025": "llave", "mr_lote_manzana": "padre"}
+    integridad = []
+    for fid, col in columnas.items():
+        if not hay(fid):
+            continue
+        r = conn.execute(
+            f"""SELECT count(*) AS registros,
+                       count(*) FILTER (WHERE {col} IS NULL OR {col} = '') AS vacios,
+                       count(*) FILTER (WHERE {col} !~ '^[0-9]+$') AS no_numericos,
+                       count(*) FILTER (WHERE {col} <> btrim({col})) AS con_espacios
+                FROM geo.v_objeto_publicado WHERE fuente_id = %s""", (fid,)).fetchone()
+        longitudes = {str(x["l"]): x["n"] for x in conn.execute(
+            f"""SELECT length({col}) AS l, count(*) AS n FROM geo.v_objeto_publicado
+                WHERE fuente_id = %s GROUP BY 1 ORDER BY 1""", (fid,))}
+        duplicados = conn.execute(
+            """SELECT count(*) AS n FROM (SELECT llave FROM geo.v_objeto_publicado WHERE fuente_id = %s
+                                          GROUP BY llave HAVING count(*) > 1) t""", (fid,)).fetchone()["n"]
+        integridad.append({"fuente": fid, "campo": "código de manzana" if col == "llave" else "manzana del lote",
+                           **r, "longitudes": longitudes, "llaves_duplicadas": duplicados})
+    if integridad:
+        informes.append({"informe": "Integridad de los códigos de manzana", "fuentes": integridad,
+                         "limitaciones": ["Los códigos se comparan tal como los publica cada fuente; no se "
+                                          "rellenan, recortan ni transforman. Longitudes distintas entre fuentes "
+                                          "explicarían una correspondencia baja."]})
+
+    if hay("mr_manzana") and hay("sdp_estrato_manzana_2025"):
+        n, ej = _ejemplos(conn, """SELECT e.llave AS codigo FROM geo.v_objeto_publicado e
+            WHERE e.fuente_id='sdp_estrato_manzana_2025' AND NOT EXISTS (SELECT 1 FROM geo.v_objeto_publicado m
+              WHERE m.fuente_id='mr_manzana' AND m.llave = e.llave)""")
+        informes.append({"informe": "Códigos de estratificación 2025 sin manzana en el Mapa de Referencia",
+                         "registros": n, "ejemplos": ej})
+        n, ej = _ejemplos(conn, """SELECT m.llave AS codigo FROM geo.v_objeto_publicado m
+            WHERE m.fuente_id='mr_manzana' AND NOT EXISTS (SELECT 1 FROM geo.v_objeto_publicado e
+              WHERE e.fuente_id='sdp_estrato_manzana_2025' AND e.llave = m.llave)""")
+        informes.append({"informe": "Manzanas del Mapa de Referencia sin estrato asignado en 2025",
+                         "registros": n, "ejemplos": ej,
+                         "limitaciones": ["Puede tratarse de manzanas no residenciales o sin estratificar; "
+                                          "no se interpreta como error sin revisar casos."]})
+    if hay("mr_manzana") and hay("mr_lote_manzana"):
+        n, ej = _ejemplos(conn, """SELECT DISTINCT l.padre AS codigo FROM geo.v_objeto_publicado l
+            WHERE l.fuente_id='mr_lote_manzana' AND NOT EXISTS (SELECT 1 FROM geo.v_objeto_publicado m
+              WHERE m.fuente_id='mr_manzana' AND m.llave = l.padre)""")
+        informes.append({"informe": "Manzanas citadas por la relación lote-manzana que no existen en la capa Manzana",
+                         "registros": n, "ejemplos": ej})
+    if hay("sdp_estrato_predio_2026") and hay("mr_lote_manzana"):
+        n, ej = _ejemplos(conn, """SELECT DISTINCT c.lote AS codigo FROM geo.v_conteo_publicado c
+            WHERE NOT EXISTS (SELECT 1 FROM geo.v_objeto_publicado l
+              WHERE l.fuente_id='mr_lote_manzana' AND l.llave = c.lote)""")
+        predios = conn.execute("""SELECT coalesce(sum(c.n_predios), 0)::bigint AS n FROM geo.v_conteo_publicado c
+            WHERE NOT EXISTS (SELECT 1 FROM geo.v_objeto_publicado l
+              WHERE l.fuente_id='mr_lote_manzana' AND l.llave = c.lote)""").fetchone()["n"]
+        informes.append({"informe": "Lotes de la tabla de predios 2026 sin relación lote-manzana",
+                         "registros": n, "predios_afectados": predios, "ejemplos": ej,
+                         "limitaciones": ["Estos predios no se suman a ninguna manzana en las fichas."]})
     return informes
 
 
@@ -369,4 +449,42 @@ def procedencia(conn) -> list[dict[str, Any]]:
                        "sintetico": r["sintetico"], "registros": r["registros_recibidos"],
                        "registros_esperados": r["registros_esperados"], "hash_contenido": r["hash_contenido"],
                        "publicada_en": r["fin"].isoformat() if r["fin"] else None})
+    return salida
+
+
+# --- registro por fuente para la validación -----------------------------------------------------
+def informe_fuentes(conn, registro: dict[str, Any]) -> list[dict[str, Any]]:
+    """Ficha de validación de cada fuente: metadatos del registro + última carga + versión publicada."""
+    proc = {p["fuente"]: p for p in procedencia(conn)}
+    est = {f["id"]: f for f in estado_fuentes(conn)}
+    salida = []
+    for fid, f in registro["fuentes"].items():
+        ultima = conn.execute(
+            """SELECT version_id, estado, sintetico, inicio, fin, registros_esperados, registros_recibidos,
+                      hash_contenido, validaciones, bitacora, motivo_cuarentena
+               FROM geo.version WHERE fuente_id = %s ORDER BY version_id DESC LIMIT 1""", (fid,)).fetchone()
+        resumen = next((b["resumen"] for b in (ultima or {}).get("bitacora") or [] if "resumen" in b), {})
+        e = est.get(fid, {})
+        salida.append({
+            "fuente": fid, "nombre": f.nombre, "entidad": f.entidad, "tipo": f.tipo, "url": f.url,
+            "ficha_url": f.ficha_url, "licencia": f.licencia, "licencia_verificada": f.licencia_verificada,
+            "fecha_dato": f.fecha_dato.isoformat() if f.fecha_dato else None,
+            "campos_registrados": f.campos, "conteo_verificado_en_registro": f.conteo_verificado,
+            "pendientes": f.pendientes,
+            "ultima_carga": None if not ultima else {
+                "version": ultima["version_id"], "estado": ultima["estado"], "sintetica": ultima["sintetico"],
+                "consultada_en": ultima["inicio"].isoformat(timespec="seconds") if ultima["inicio"] else None,
+                "registros_esperados": ultima["registros_esperados"],
+                "registros_recibidos": ultima["registros_recibidos"],
+                "sha256_o_huella": ultima["hash_contenido"],
+                "campos_disponibles": resumen.get("campos_disponibles"),
+                "srid": resumen.get("srid"), "srid_nota": resumen.get("srid_nota"),
+                "validaciones": [{"regla": v["regla"], "ok": v["ok"], "bloqueante": v["bloqueante"],
+                                  "detalle": v["detalle"]} for v in ultima["validaciones"] or []],
+                "motivo_cuarentena": ultima["motivo_cuarentena"]},
+            "estado_final": ("publicada" if e.get("habilitada") else
+                             "en cuarentena" if ultima and ultima["estado"] == "cuarentena" else "deshabilitada"),
+            "motivos_no_habilitada": e.get("motivos", []),
+            "procedencia": {k: proc.get(fid, {}).get(k) for k in ("origen", "oficial", "detalle", "version_publicada")},
+        })
     return salida

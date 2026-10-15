@@ -34,17 +34,22 @@ def descargar_archivo(url: str, destino: Path, cliente: httpx.Client | None = No
     parcial = destino.with_suffix(destino.suffix + ".parcial")
     h = hashlib.sha256()
     total = 0
-    with cliente.stream("GET", url) as r:
-        r.raise_for_status()
-        esperado = r.headers.get("content-length")
-        with parcial.open("wb") as f:
-            for bloque in r.iter_bytes(1 << 20):
-                f.write(bloque)
-                h.update(bloque)
-                total += len(bloque)
-        if esperado is not None and int(esperado) != total:
-            raise IOError(f"Descarga incompleta: se esperaban {esperado} bytes y llegaron {total}.")
-        status = r.status_code
+    try:
+        with cliente.stream("GET", url) as r:
+            r.raise_for_status()
+            esperado = r.headers.get("content-length")
+            with parcial.open("wb") as f:
+                for bloque in r.iter_bytes(1 << 20):
+                    f.write(bloque)
+                    h.update(bloque)
+                    total += len(bloque)
+            if esperado is not None and int(esperado) != total:
+                raise IOError(f"Descarga incompleta: se esperaban {esperado} bytes y llegaron {total}.")
+            status = r.status_code
+    except BaseException:
+        # Solo se elimina el temporal propio (.parcial); un archivo completo anterior queda intacto.
+        parcial.unlink(missing_ok=True)
+        raise
     parcial.replace(destino)
     return ArchivoDescargado(destino, h.hexdigest(), total, url, status)
 

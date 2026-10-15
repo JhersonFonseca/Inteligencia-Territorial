@@ -1,0 +1,137 @@
+{
+  "tipo_evidencia": "datos_oficiales",
+  "fecha": "2026-10-15T12:18:46",
+  "url": "http://localhost:8766/",
+  "commit": "b6f0a58",
+  "aprobado": false,
+  "interrumpida": true,
+  "causa": "El buscador no devolvió resultados para 'CHAPINERO' en las fuentes habilitadas.",
+  "comprobaciones_hasta_la_interrupcion": [
+    {
+      "comprobacion": "Fuentes con licencia o validaciones pendientes siguen deshabilitadas",
+      "ok": true,
+      "detalle": "deshabilitadas: ['sdp_estrato_manzana_2019_rest']"
+    },
+    {
+      "comprobacion": "Procedencia oficial: mr_localidad",
+      "ok": false,
+      "detalle": "no habilitada. No hay una versión que haya pasado todas las validaciones bloqueantes. Última carga en cuarentena (versión 1): Error durante la carga: ErrorServicio: Falló tras 3 intentos: https://serviciosgis.catastrobogota.gov.co/arcgis/rest/services/Mapa_Referencia/Mapa_Referencia/MapServer/48 (403 Forbidden)"
+    },
+    {
+      "comprobacion": "Procedencia oficial: mr_upl",
+      "ok": false,
+      "detalle": "no habilitada. No hay una versión que haya pasado todas las validaciones bloqueantes."
+    },
+    {
+      "comprobacion": "Procedencia oficial: mr_sector",
+      "ok": false,
+      "detalle": "no habilitada. No hay una versión que haya pasado todas las validaciones bloqueantes."
+    },
+    {
+      "comprobacion": "Procedencia oficial: mr_manzana",
+      "ok": false,
+      "detalle": "no habilitada. No hay una versión que haya pasado todas las validaciones bloqueantes."
+    },
+    {
+      "comprobacion": "Procedencia oficial: mr_lote_manzana",
+      "ok": false,
+      "detalle": "no habilitada. No hay una versión que haya pasado todas las validaciones bloqueantes."
+    },
+    {
+      "comprobacion": "Procedencia oficial: sdp_estrato_manzana_2025",
+      "ok": false,
+      "detalle": "no habilitada. No hay una versión que haya pasado todas las validaciones bloqueantes."
+    },
+    {
+      "comprobacion": "Procedencia oficial: sdp_estrato_predio_2026",
+      "ok": false,
+      "detalle": "no habilitada. No hay una versión que haya pasado todas las validaciones bloqueantes."
+    },
+    {
+      "comprobacion": "Ninguna versión publicada es sintética",
+      "ok": true,
+      "detalle": "todas las versiones publicadas son no sintéticas"
+    },
+    {
+      "comprobacion": "API niega la capa no habilitada localidad",
+      "ok": true,
+      "detalle": "HTTP 409"
+    },
+    {
+      "comprobacion": "API niega la capa no habilitada upl",
+      "ok": true,
+      "detalle": "HTTP 409"
+    },
+    {
+      "comprobacion": "API niega la capa no habilitada sector",
+      "ok": true,
+      "detalle": "HTTP 409"
+    },
+    {
+      "comprobacion": "API niega la capa no habilitada manzana",
+      "ok": true,
+      "detalle": "HTTP 409"
+    },
+    {
+      "comprobacion": "API niega la capa no habilitada estrato_2025",
+      "ok": true,
+      "detalle": "HTTP 409"
+    },
+    {
+      "comprobacion": "API niega la capa no habilitada estrato_2019",
+      "ok": true,
+      "detalle": "HTTP 409"
+    },
+    {
+      "comprobacion": "Motor del mapa inicializado",
+      "ok": true,
+      "detalle": "MapLibre 4.7.1 listo"
+    },
+    {
+      "comprobacion": "Mapa base real disponible",
+      "ok": false,
+      "detalle": "no_disponible"
+    },
+    {
+      "comprobacion": "Aviso visible solo si el mapa base falla",
+      "ok": true,
+      "detalle": "aviso visible: True"
+    },
+    {
+      "comprobacion": "Fondo neutro definido bajo el mapa base",
+      "ok": true,
+      "detalle": "#e9ebe6"
+    },
+    {
+      "comprobacion": "Capa de localidades dibujada aunque falte el mapa base",
+      "ok": false,
+      "detalle": "0 polígonos"
+    },
+    {
+      "comprobacion": "Polígonos de localidad presentes en el lienzo",
+      "ok": false,
+      "detalle": "0 fragmentos"
+    },
+    {
+      "comprobacion": "Sin franja de datos sintéticos",
+      "ok": true,
+      "detalle": "franja visible: False"
+    },
+    {
+      "comprobacion": "Ninguna capa del mapa marcada como sintética",
+      "ok": true,
+      "detalle": "no hay capas con datos cargadas"
+    },
+    {
+      "comprobacion": "Botones de zoom",
+      "ok": true,
+      "detalle": "10.30 → 11.30 → 10.30"
+    },
+    {
+      "comprobacion": "El buscador encuentra 'CHAPINERO'",
+      "ok": false,
+      "detalle": "sin resultados en las fuentes habilitadas"
+    }
+  ],
+  "error": "PasoFallido: El buscador no devolvió resultados para 'CHAPINERO' en las fuentes habilitadas."
+}

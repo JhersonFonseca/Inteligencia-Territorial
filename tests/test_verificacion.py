@@ -86,7 +86,9 @@ def test_ficha_con_version_distinta_o_codigo_de_demostracion_no_aprueba():
 def test_herramienta_rechaza_combinaciones_enganosas():
     import importlib.util
     import types
-    spec = importlib.util.spec_from_file_location("vm", ver.__file__.replace("territorial/verificacion.py", "herramientas/verificar_mapa.py"))
+    from pathlib import Path
+    # Se ubica respecto de la carpeta de pruebas, no del paquete instalado (en Docker está en site-packages).
+    spec = importlib.util.spec_from_file_location("vm", Path(__file__).resolve().parents[1] / "herramientas" / "verificar_mapa.py")
     vm = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(vm)
     a = lambda **k: types.SimpleNamespace(**{"datos": "reales", "mapa_base": "real", "salida": "docs/evidencia/datos_reales",
