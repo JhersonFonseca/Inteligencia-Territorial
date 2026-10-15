@@ -103,6 +103,8 @@ Aparece una "Localidad Sintética" con cuatro manzanas inventadas cerca del cent
 franja roja avisa que los datos no son reales. Al cargar después los datos oficiales, cada fuente
 real reemplaza a su versión sintética. Al revés no es posible: si una fuente ya tiene datos reales
 publicados, la demostración se niega a cargarse y ningún dato sintético los reemplaza.
+Para quitar la demostración sin borrar nada: `territorial retirar-sinteticos --confirmar`.
+`territorial procedencia` muestra el origen de cada versión publicada.
 
 ## Pruebas
 
@@ -127,23 +129,26 @@ docker compose exec db psql -U territorial -d territorial_pruebas -c "CREATE EXT
 
 | Grupo | Resultado | Qué cubre |
 |---|---|---|
-| Unitarias (sin red ni base) | 27 aprobadas | Paginación por `resultOffset` ordenada por OID (OID que no empiezan en 1), tope de 2000 por página, pérdida detectada por conteo, reintentos ante 5xx y fallos de red, sin reintento ante 4xx, rechazo de capas solo visuales, campos inexistentes y capas sin paginación; validaciones; habilitación por licencia; advertencias de antigüedad; lectura del CSV sin conservar el CHIP; SRID del GeoJSON; descarga incompleta |
-| Base de datos (PostgreSQL 16 + PostGIS 3.4) | 21 aprobadas | Migración idempotente; los datos sintéticos no reemplazan versiones reales; la página no usa recursos externos; publicación y reemplazo; cuarentena por pérdida, duplicados, estrato fuera de dominio, coordenadas fuera de Bogotá, campo faltante y error inesperado, conservando siempre la versión anterior; corrección de geometrías inválidas; fuente con licencia pendiente que carga pero no se habilita; agregación lote → manzana; fichas por manzana, sector y localidad; informes de consistencia; API completa |
+| Unitarias (sin red ni base) | 36 aprobadas | Reglas de la verificación de extremo a extremo (una demostración sintética, un archivo sin procedencia o una fuente en cuarentena no aprueban como datos reales; una fuente con licencia pendiente no puede estar habilitada); Paginación por `resultOffset` ordenada por OID (OID que no empiezan en 1), tope de 2000 por página, pérdida detectada por conteo, reintentos ante 5xx y fallos de red, sin reintento ante 4xx, rechazo de capas solo visuales, campos inexistentes y capas sin paginación; validaciones; habilitación por licencia; advertencias de antigüedad; lectura del CSV sin conservar el CHIP; SRID del GeoJSON; descarga incompleta |
+| Base de datos (PostgreSQL 16 + PostGIS 3.4) | 25 aprobadas | Migración idempotente; procedencia (servicio oficial, descarga verificada, archivo sin procedencia o modificado, sintético); retiro de versiones sintéticas sin borrar ni tocar las reales; los datos sintéticos no reemplazan versiones reales; la página no usa recursos externos; publicación y reemplazo; cuarentena por pérdida, duplicados, estrato fuera de dominio, coordenadas fuera de Bogotá, campo faltante y error inesperado, conservando siempre la versión anterior; corrección de geometrías inválidas; fuente con licencia pendiente que carga pero no se habilita; agregación lote → manzana; fichas por manzana, sector y localidad; informes de consistencia; API completa |
 | Integración con servicios oficiales | **No ejecutadas** | El entorno de desarrollo no tiene acceso a los servidores de Bogotá. Se ejecutan en tu computador (lista abajo) |
 
-| Navegador (`herramientas/verificar_mapa.py`) | 15/15 en cada uno de los 3 escenarios del mapa base | Motor del mapa, estado y aviso del mapa base, capas dibujadas sin mapa base, zoom, buscador, clic sobre una manzana, ficha, resaltado, advertencia sintética y clasificación de errores de consola y red. Solo con datos sintéticos; detalle y evidencia en `docs/mapa.md` |
+| Navegador (`herramientas/verificar_mapa.py --datos sinteticos`) | 20/20 en cada uno de los 3 escenarios del mapa base | Procedencia y habilitación de las fuentes, capa no habilitada negada por la API, motor del mapa, estado y aviso del mapa base, capas dibujadas sin mapa base, zoom, buscador, clic sobre una manzana, ficha, resaltado, advertencia sintética y clasificación de errores de consola y red. Solo con datos sintéticos; detalle y evidencia en `docs/mapa.md` |
 
 Docker Compose no se pudo probar en el entorno de desarrollo (no hay Docker allí). Es la primera
 validación de la lista.
 
 ## Validaciones que debes ejecutar desde tu computador
 
+**Guía paso a paso con datos oficiales: `docs/validacion_local.md`.** Es la condición para pasar a
+staging. La lista siguiente resume qué se valida.
+
 Anota el resultado de cada una; con eso se actualiza `fuentes.yaml` y se cierran los pendientes.
 
 1. **Docker Compose arranca:** `docker compose up -d --build`, luego `docker compose ps` (los dos
    servicios en *running*, la base en *healthy*) y http://localhost:8000/api/salud con
    `"estado": "ok"` y una versión de PostGIS.
-2. **Pruebas locales:** `docker compose run --rm api pytest -v` termina con 48 aprobadas.
+2. **Pruebas locales:** `docker compose run --rm api pytest -v` termina con 61 aprobadas.
 3. **Servicios oficiales:** `docker compose run --rm api pytest -m red -v -s`. Revisa en la salida:
    - Cada capa del Mapa de Referencia permite consultas, tiene los campos registrados y paginación.
    - La capa histórica de 2019 sigue teniendo 45 051 manzanas y la suma por estrato es igual al total.

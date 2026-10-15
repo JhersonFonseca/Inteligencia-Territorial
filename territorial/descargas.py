@@ -49,6 +49,44 @@ def descargar_archivo(url: str, destino: Path, cliente: httpx.Client | None = No
     return ArchivoDescargado(destino, h.hexdigest(), total, url, status)
 
 
+def ruta_procedencia(ruta: Path) -> Path:
+    return ruta.with_name(ruta.name + ".procedencia.json")
+
+
+def escribir_procedencia(a: ArchivoDescargado, fuente_id: str) -> Path:
+    """Guarda junto al archivo de dónde y cuándo se descargó, con su huella sha256."""
+    from datetime import datetime, timezone
+    destino = ruta_procedencia(a.ruta)
+    destino.write_text(json.dumps({
+        "fuente": fuente_id, "url": a.url, "status_http": a.status, "bytes": a.bytes, "sha256": a.sha256,
+        "descargado_en": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "agente": config.agente_http()}, ensure_ascii=False, indent=2), encoding="utf-8")
+    return destino
+
+
+def leer_procedencia(ruta: Path, sha256: str, fuente_id: str, url_oficial: str) -> dict[str, Any]:
+    """Comprueba que el archivo es exactamente el que se descargó de la URL oficial registrada."""
+    ficha = ruta_procedencia(ruta)
+    if not ficha.exists():
+        return {"tipo": "archivo_sin_procedencia",
+                "motivo": "El archivo no se descargó con 'territorial descargar' (no hay ficha de procedencia)."}
+    try:
+        datos = json.loads(ficha.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        return {"tipo": "archivo_sin_procedencia", "motivo": f"Ficha de procedencia ilegible: {e}"}
+    problemas = []
+    if datos.get("sha256") != sha256:
+        problemas.append("la huella sha256 no coincide: el archivo cambió después de descargarse")
+    if datos.get("url") != url_oficial:
+        problemas.append(f"se descargó de {datos.get('url')} y no de la URL registrada")
+    if datos.get("fuente") != fuente_id:
+        problemas.append(f"la descarga corresponde a la fuente {datos.get('fuente')}")
+    if problemas:
+        return {"tipo": "archivo_sin_procedencia", "motivo": "; ".join(problemas) + "."}
+    return {"tipo": "descarga_verificada", "url": datos["url"], "descargado_en": datos.get("descargado_en"),
+            "bytes": datos.get("bytes"), "status_http": datos.get("status_http")}
+
+
 def sha256_archivo(ruta: Path) -> str:
     h = hashlib.sha256()
     with ruta.open("rb") as f:

@@ -320,3 +320,53 @@ def consistencia(conn) -> list[dict[str, Any]]:
                                     "de sus predios 2026 (comparación, no fusión)", **r,
                          "porcentaje": round(100 * r["coinciden"] / r["comparables"], 2) if r["comparables"] else None})
     return informes
+
+
+# --- procedencia de lo publicado ---------------------------------------------------------------
+ORIGENES_OFICIALES = ("servicio_oficial", "descarga_verificada")
+
+
+def _origen(f: dict[str, Any], v: dict[str, Any]) -> tuple[str, str]:
+    """Clasifica de dónde salió la versión publicada a partir de su bitácora."""
+    if v["sintetico"]:
+        return "sintetico", "Versión cargada con datos inventados de prueba."
+    bitacora = v["bitacora"] or []
+    archivo = next((b for b in bitacora if "procedencia" in b), None)
+    if archivo:
+        p = archivo["procedencia"]
+        if p.get("tipo") == "descarga_verificada":
+            return "descarga_verificada", (f"Archivo descargado de la URL registrada el {p.get('descargado_en')}; "
+                                           f"sha256 {archivo.get('sha256', '')[:12]}… coincide.")
+        return "archivo_sin_procedencia", p.get("motivo", "")
+    consultas = [b for b in bitacora if str(b.get("url", "")).startswith(f["url"]) and b.get("status") == 200]
+    if consultas:
+        esperados, recibidos = v["registros_esperados"], v["registros_recibidos"]
+        if esperados is not None and esperados == recibidos:
+            return "servicio_oficial", (f"{len(consultas)} consultas al servicio registrado; "
+                                        f"{recibidos} registros, igual al conteo del servicio.")
+        return "servicio_incompleto", f"Conteo del servicio {esperados}, registros recibidos {recibidos}."
+    return "desconocida", "La bitácora no permite establecer el origen."
+
+
+def procedencia(conn) -> list[dict[str, Any]]:
+    filas = conn.execute(
+        """SELECT f.fuente_id, f.url, v.version_id, v.sintetico, v.registros_esperados, v.registros_recibidos,
+                  v.hash_contenido, v.fin, v.bitacora
+           FROM geo.fuente f LEFT JOIN geo.version v ON v.version_id = f.version_publicada
+           ORDER BY f.fuente_id""").fetchall()
+    estado = {f["id"]: f for f in estado_fuentes(conn)}
+    salida = []
+    for r in filas:
+        e = estado[r["fuente_id"]]
+        base = {"fuente": r["fuente_id"], "habilitada": e["habilitada"], "motivos": e["motivos"],
+                "version_publicada": r["version_id"]}
+        if r["version_id"] is None:
+            salida.append({**base, "origen": "sin_version", "detalle": "No hay versión publicada.",
+                           "oficial": False})
+            continue
+        origen, detalle = _origen({"url": r["url"]}, r)
+        salida.append({**base, "origen": origen, "detalle": detalle, "oficial": origen in ORIGENES_OFICIALES,
+                       "sintetico": r["sintetico"], "registros": r["registros_recibidos"],
+                       "registros_esperados": r["registros_esperados"], "hash_contenido": r["hash_contenido"],
+                       "publicada_en": r["fin"].isoformat() if r["fin"] else None})
+    return salida

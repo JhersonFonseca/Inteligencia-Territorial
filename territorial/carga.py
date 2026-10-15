@@ -18,7 +18,7 @@ import psycopg
 
 from . import validacion as v
 from .arcgis import ClienteArcGIS
-from .descargas import contar_lote_estrato_csv_zip, leer_geojson, sha256_archivo
+from .descargas import contar_lote_estrato_csv_zip, leer_geojson, leer_procedencia, sha256_archivo
 from .registro import Fuente
 
 LOTE_INSERCION = 1000
@@ -43,6 +43,24 @@ def _rechazo_sintetico(conn, fuente_id: str, sintetico: bool) -> dict[str, Any] 
     return {"version_id": None, "estado": "rechazada",
             "motivo": (f"{fuente_id} tiene publicada la versión real {real}; los datos sintéticos no la "
                        "reemplazan. No se creó ninguna versión.")}
+
+
+def retirar_sinteticos(conn) -> list[dict[str, Any]]:
+    """Deja de publicar las versiones sintéticas (estado 'retirada'). No borra filas.
+
+    La fuente queda sin versión publicada (no habilitada) hasta que se cargue una versión real.
+    Nunca toca versiones reales.
+    """
+    filas = conn.execute(
+        """SELECT f.fuente_id, v.version_id FROM geo.fuente f
+           JOIN geo.version v ON v.version_id = f.version_publicada
+           WHERE v.sintetico FOR UPDATE OF f""").fetchall()
+    for r in filas:
+        conn.execute("UPDATE geo.fuente SET version_publicada = NULL WHERE fuente_id = %s", (r["fuente_id"],))
+        conn.execute("UPDATE geo.version SET estado = 'retirada' WHERE version_id = %s AND sintetico",
+                     (r["version_id"],))
+    conn.commit()
+    return [{"fuente": r["fuente_id"], "version_retirada": r["version_id"]} for r in filas]
 
 
 # --- versiones ---------------------------------------------------------------------------------
@@ -125,6 +143,16 @@ def _validar_geometrias_bd(conn, version_id: int) -> v.Resultado:
                        f"{fila['invalidas']} siguen inválidas; {fila['vacias']} vacías.")
 
 
+def _validacion_procedencia(procedencia: dict[str, Any], sintetico: bool) -> v.Resultado:
+    if sintetico:
+        return v.Resultado("procedencia", False, False, "Datos sintéticos: no proceden de una fuente oficial.")
+    ok = procedencia.get("tipo") == "descarga_verificada"
+    return v.Resultado("procedencia", ok, False,
+                       f"Descargado de {procedencia.get('url')} el {procedencia.get('descargado_en')}." if ok else
+                       f"Procedencia no verificada: {procedencia.get('motivo')} La versión puede revisarse "
+                       "internamente, pero no cuenta como dato oficial en la verificación de extremo a extremo.")
+
+
 def _hash_features(features: list[dict[str, Any]]) -> str:
     h = hashlib.sha256()
     for f in features:
@@ -158,7 +186,8 @@ def _filas(features, fuente: Fuente, extras: list[str]) -> list[tuple]:
 def cargar_features(conn, fuente: Fuente, features: list[dict[str, Any]], campos_disponibles: list[str],
                     dominio: dict[int, str], esperados: int | None, bitacora: list[dict[str, Any]],
                     hash_contenido: str | None = None, con_geometria: bool = True,
-                    srid_origen: int = 4326, sintetico: bool = False) -> dict[str, Any]:
+                    srid_origen: int = 4326, sintetico: bool = False,
+                    extra: list[v.Resultado] | None = None) -> dict[str, Any]:
     if rechazo := _rechazo_sintetico(conn, fuente.id, sintetico):
         return rechazo
     version_id = _nueva_version(conn, fuente.id, sintetico)
@@ -180,6 +209,7 @@ def cargar_features(conn, fuente: Fuente, features: list[dict[str, Any]], campos
             geoms = [f.get("geometry") for f in features]
             resultados += [v.geometria_presente_y_tipo(geoms), v.dentro_de_bogota(geoms)]
         resultados += [v.licencia(fuente.licencia_verificada, fuente.licencia), v.fecha_dato(fuente.fecha_dato)]
+        resultados += extra or []
 
         if not v.hay_bloqueos(resultados):
             _insertar_objetos(conn, version_id, fuente.id, filas, srid_origen)
@@ -210,10 +240,12 @@ def cargar_desde_geojson(conn, fuente: Fuente, ruta, dominio: dict[int, str], sr
         features, campos, srid_archivo = leer_geojson(ruta)
     except Exception as e:  # noqa: BLE001
         return _cuarentena_por_error(conn, fuente.id, e, sintetico)
-    bitacora = [{"archivo": str(ruta), "sha256": sha256_archivo(ruta), "url_origen": fuente.url}]
+    sha = sha256_archivo(ruta)
+    procedencia = leer_procedencia(ruta, sha, fuente.id, fuente.url)
+    bitacora = [{"archivo": str(ruta), "sha256": sha, "procedencia": procedencia}]
     return cargar_features(conn, fuente, features, campos, dominio, None, bitacora,
-                           hash_contenido=bitacora[0]["sha256"], srid_origen=srid_origen or srid_archivo,
-                           sintetico=sintetico)
+                           hash_contenido=sha, srid_origen=srid_origen or srid_archivo,
+                           sintetico=sintetico, extra=[_validacion_procedencia(procedencia, sintetico)])
 
 
 def cargar_desde_csv_zip(conn, fuente: Fuente, ruta, dominio: dict[int, str],
@@ -225,7 +257,8 @@ def cargar_desde_csv_zip(conn, fuente: Fuente, ruta, dominio: dict[int, str],
         conteos, columnas, filas = contar_lote_estrato_csv_zip(ruta, fuente.campos["lote"],
                                                                fuente.campos["estrato"])
         sha = sha256_archivo(ruta)
-        bitacora = [{"archivo": str(ruta), "sha256": sha, "url_origen": fuente.url, "filas": filas}]
+        procedencia = leer_procedencia(ruta, sha, fuente.id, fuente.url)
+        bitacora = [{"archivo": str(ruta), "sha256": sha, "filas": filas, "procedencia": procedencia}]
         resultados = [v.campos_presentes(fuente.campos.values(), columnas)]
         if resultados[0].ok:
             resultados += [v.no_vacio(filas),
@@ -233,7 +266,8 @@ def cargar_desde_csv_zip(conn, fuente: Fuente, ruta, dominio: dict[int, str],
             lotes_vacios = sum(n for (lote, _), n in conteos.items() if not lote)
             resultados.append(v.Resultado("lote_presente", lotes_vacios == 0, True,
                                           f"{lotes_vacios} predios sin código de lote."))
-        resultados += [v.licencia(fuente.licencia_verificada, fuente.licencia), v.fecha_dato(fuente.fecha_dato)]
+        resultados += [v.licencia(fuente.licencia_verificada, fuente.licencia), v.fecha_dato(fuente.fecha_dato),
+                       _validacion_procedencia(procedencia, sintetico)]
         if not v.hay_bloqueos(resultados):
             with conn.cursor() as cur:
                 cur.executemany(

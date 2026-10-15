@@ -9,6 +9,9 @@ Comandos:
   cargar-archivo <fuente> <ruta> [--sintetico]
                                Carga un GeoJSON o CSV comprimido ya descargado.
   consistencia                 Informes de consistencia entre fuentes publicadas.
+  procedencia                  Origen de cada versión publicada (oficial, sin procedencia, sintética).
+  retirar-sinteticos --confirmar
+                               Deja de publicar las versiones sintéticas sin borrarlas.
   demo-sintetica               Publica datos INVENTADOS para ver el mapa sin Internet
                                (requiere TERRITORIAL_PERMITIR_SINTETICOS=1; se marcan y se avisan).
 """
@@ -21,8 +24,8 @@ import sys
 from pathlib import Path
 
 from . import bd, config, fichas
-from .carga import cargar_desde_arcgis, cargar_desde_csv_zip, cargar_desde_geojson
-from .descargas import descargar_archivo
+from .carga import cargar_desde_arcgis, cargar_desde_csv_zip, cargar_desde_geojson, retirar_sinteticos
+from .descargas import descargar_archivo, escribir_procedencia
 from .registro import cargar_registro, sincronizar
 
 
@@ -53,7 +56,10 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--srid", type=int, default=None,
                    help="Fuerza el SRID de origen del GeoJSON. Por defecto se usa el declarado en el archivo.")
     sub.add_parser("consistencia")
+    sub.add_parser("procedencia")
     sub.add_parser("demo-sintetica")
+    r = sub.add_parser("retirar-sinteticos")
+    r.add_argument("--confirmar", action="store_true", help="Necesario para aplicar el retiro.")
     args = p.parse_args(argv)
 
     registro = cargar_registro()
@@ -65,7 +71,9 @@ def main(argv: list[str] | None = None) -> int:
         extension = ".json" if f.tipo == "descarga_geojson" else ".csv.zip"
         destino = config.carpeta_datos() / f"{f.id}{extension}"
         r = descargar_archivo(f.url, destino)
-        _imprimir({"archivo": str(r.ruta), "bytes": r.bytes, "sha256": r.sha256, "status": r.status})
+        ficha = escribir_procedencia(r, f.id)
+        _imprimir({"archivo": str(r.ruta), "bytes": r.bytes, "sha256": r.sha256, "status": r.status,
+                   "procedencia": str(ficha)})
         return 0
 
     conn = bd.conectar()
@@ -109,6 +117,17 @@ def main(argv: list[str] | None = None) -> int:
                 _imprimir(cargar_demo(conn, registro, config.carpeta_datos()))
             except RuntimeError as e:
                 sys.exit(str(e))
+        elif args.comando == "retirar-sinteticos":
+            if not args.confirmar:
+                sys.exit("Retira de la consulta todas las versiones sintéticas publicadas (no borra nada). "
+                         "Repite con --confirmar para aplicarlo.")
+            _imprimir(retirar_sinteticos(conn))
+        elif args.comando == "procedencia":
+            for f in fichas.procedencia(conn):
+                marca = "OFICIAL" if f["oficial"] else f["origen"].upper()
+                hab = "habilitada" if f["habilitada"] else "no habilitada"
+                print(f"{f['fuente']:34} {marca:24} {hab:14} versión {f['version_publicada']}")
+                print(f"    {f['detalle']}")
         elif args.comando == "consistencia":
             _imprimir(fichas.consistencia(conn))
     finally:

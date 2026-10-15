@@ -48,7 +48,8 @@ La revisión encontró además dos problemas reales:
 
 ## 3. Verificación automática
 
-`herramientas/verificar_mapa.py` abre el mapa en Chromium y aplica 15 comprobaciones:
+`herramientas/verificar_mapa.py` abre el mapa en Chromium y aplica 15 comprobaciones de funcionamiento y, desde la revisión de procedencia, 5 más
+(20 en total en modo sintético; en modo real se añaden una por fuente y por cada referencia de las fichas):
 
 - **Mapa:** el motor inicializado, el estado del mapa base, el aviso y el fondo, y las localidades
   dibujadas sin mapa base.
@@ -77,42 +78,43 @@ lista las capas sintéticas. Evidencia en `docs/evidencia/2026-10-15_demostracio
 
 | Mapa base | Resultado | Red | Consola |
 |---|---|---|---|
-| Bloqueado (como en el entorno de desarrollo) | 15/15 | 14 solicitudes locales/API correctas; 125 teselas bloqueadas a propósito | 0 errores reales; 1 aviso resumen del mapa base |
-| Sin respuesta | 15/15 (antes de la corrección: el mapa no arrancaba) | 14 locales/API correctas; 58 teselas canceladas por el mapa | 0 errores reales; 1 aviso "no respondió en 8 s" |
-| Simulado (teselas grises generadas localmente; **no es cartografía**) | 15/15 | 14 locales/API correctas; 54 teselas simuladas, 24 canceladas por el mapa | 0 errores reales |
+| Bloqueado (como en el entorno de desarrollo) | 20/20 | 14 solicitudes locales/API correctas; 125 teselas bloqueadas a propósito | 0 errores reales; 1 aviso resumen del mapa base |
+| Sin respuesta | 20/20 (antes de la corrección: el mapa no arrancaba) | 14 locales/API correctas; 58 teselas canceladas por el mapa | 0 errores reales; 1 aviso "no respondió en 8 s" |
+| Simulado (teselas grises generadas localmente; **no es cartografía**) | 20/20 | 14 locales/API correctas; 54 teselas simuladas, 24 canceladas por el mapa | 0 errores reales |
 
 El modo simulado solo comprueba que el estado pase a *disponible* y que el aviso desaparezca. No
 demuestra que OpenStreetMap esté accesible.
 
 ### Escenario 2: datos geográficos reales (pendiente, desde tu computador)
 
-Requiere acceso a los servicios oficiales y a OpenStreetMap.
+Se ejecuta con la guía `docs/validacion_local.md`:
 
-1. Carga las fuentes reales (sección *Cargar los datos oficiales* del README). No ejecutes la
-   demostración sintética en esa base. Si ya la ejecutaste, las cargas reales reemplazan a las
-   sintéticas.
-2. Comprueba que `territorial estado` no muestra ninguna fuente *[SINTÉTICA]*.
-3. Instala Playwright una sola vez:
+```powershell
+py herramientas\verificar_mapa.py --datos reales --mapa-base real --url http://localhost:8000/ --buscar CHAPINERO --salida docs\evidencia\datos_reales\mapa
+```
 
-   ```powershell
-   py -m pip install playwright
-   py -m playwright install chromium
-   ```
+Con `--datos reales`, la verificación comprueba la **procedencia** de cada capa, no solo que el mapa
+responda:
 
-4. Ejecuta la verificación:
+- Cada fuente del mapa debe venir de un servicio oficial (con el conteo del servicio igual a lo
+  recibido) o de una descarga verificada de la URL registrada, con la huella sha256 coincidente.
+- Ninguna versión puede ser sintética.
+- Las fichas deben remitir exactamente a esas versiones.
 
-   ```powershell
-   py herramientas\verificar_mapa.py --url http://localhost:8000/ --mapa-base real --buscar CHAPINERO --salida docs\evidencia\datos_reales
-   ```
+### Control negativo (ejecutado el 15 de octubre de 2026)
 
-5. Comprueba en el informe:
-   - El estado del mapa base es *disponible*.
-   - La franja sintética **no** aparece.
-   - Las 15 comprobaciones están aprobadas.
-6. Envíame el resultado, o súbelo a la rama si quieres que quede en el repositorio.
+Se ejecutó `--datos reales` sobre la base de la demostración sintética, para comprobar que no puede
+aprobar. Resultado: **falló en 29 comprobaciones**:
 
-Si en ese entorno la franja sintética aparece con datos reales, o no aparece cuando quedó alguna capa
-sintética, la comprobación *Advertencia sintética coincide con los datos* falla.
+- las siete fuentes, por origen sintético;
+- la franja y las capas sintéticas;
+- las dos fichas, por estar marcadas como sintéticas, usar códigos de la demostración y remitir a
+  versiones sintéticas;
+- el mapa base, que en este entorno no es accesible.
+
+Informe en `docs/evidencia/controles_negativos/`. La herramienta también se niega a ejecutarse con
+`--datos reales` si el mapa base está bloqueado o simulado, si la carpeta de salida es de evidencia
+sintética o si se busca el texto de la demostración.
 
 ## 4. Límites conocidos
 

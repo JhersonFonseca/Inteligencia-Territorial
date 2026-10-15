@@ -115,6 +115,14 @@ def ficha(nivel: str, codigo: str):
     return datos
 
 
+@app.get("/api/procedencia")
+def procedencia():
+    """Origen de cada versión publicada: servicio oficial, descarga verificada, archivo sin procedencia
+    o datos sintéticos. Lo usa la verificación de extremo a extremo con datos reales."""
+    with _conexion() as conn:
+        return {"fuentes": fichas.procedencia(conn)}
+
+
 @app.get("/api/consistencia")
 def consistencia():
     with _conexion() as conn:

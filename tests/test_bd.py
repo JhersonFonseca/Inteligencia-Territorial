@@ -210,3 +210,69 @@ def test_pagina_usa_maplibre_local_y_no_un_cdn(api_cliente):
     r = api_cliente.get("/web/vendor/maplibre-gl-4.7.1/maplibre-gl.js")
     assert r.status_code == 200 and len(r.content) > 500_000
     assert api_cliente.get("/web/vendor/maplibre-gl-4.7.1/LICENSE.txt").status_code == 200
+
+
+def test_procedencia_distingue_descarga_verificada_archivo_suelto_y_sintetico(conn, registro, tmp_path):
+    import json as _json
+    from territorial.carga import cargar_desde_geojson
+    from territorial.descargas import ArchivoDescargado, escribir_procedencia, sha256_archivo
+    f = registro["fuentes"]["sdp_estrato_manzana_2025"]
+    ruta = tmp_path / "estrato.json"
+    ruta.write_text(_json.dumps({"type": "FeatureCollection", "features": [
+        {"type": "Feature", "properties": x["properties"], "geometry": x["geometry"]} for x in s.ESTRATO_2025]}))
+    # 1) archivo suelto: se publica, pero no cuenta como oficial
+    r1 = cargar_desde_geojson(conn, f, ruta, registro["dominio_estrato"])
+    assert r1["estado"] == "publicada"
+    assert any(v["regla"] == "procedencia" and not v["ok"] for v in r1["validaciones"])
+    p = {x["fuente"]: x for x in fichas.procedencia(conn)}["sdp_estrato_manzana_2025"]
+    assert p["origen"] == "archivo_sin_procedencia" and not p["oficial"]
+    # 2) con ficha de procedencia de la URL registrada: descarga verificada
+    escribir_procedencia(ArchivoDescargado(ruta, sha256_archivo(ruta), ruta.stat().st_size, f.url, 200), f.id)
+    cargar_desde_geojson(conn, f, ruta, registro["dominio_estrato"])
+    p = {x["fuente"]: x for x in fichas.procedencia(conn)}["sdp_estrato_manzana_2025"]
+    assert p["origen"] == "descarga_verificada" and p["oficial"]
+    # 3) archivo modificado después de descargarlo: la huella no coincide
+    ruta.write_text(ruta.read_text().replace('"ESTRATO": 2', '"ESTRATO": 3'))
+    cargar_desde_geojson(conn, f, ruta, registro["dominio_estrato"])
+    p = {x["fuente"]: x for x in fichas.procedencia(conn)}["sdp_estrato_manzana_2025"]
+    assert p["origen"] == "archivo_sin_procedencia" and "sha256" in p["detalle"]
+
+
+def test_procedencia_de_servicio_arcgis(conn, registro):
+    import httpx
+    import respx
+    from territorial.arcgis import ClienteArcGIS
+    from territorial.carga import cargar_desde_arcgis
+    f = registro["fuentes"]["mr_sector"]
+    meta = {"type": "Feature Layer", "capabilities": "Query", "maxRecordCount": 1000, "objectIdField": "OBJECTID",
+            "advancedQueryCapabilities": {"supportsPagination": True},
+            "fields": [{"name": n} for n in ("OBJECTID", "SCACODIGO", "SCANOMBRE")]}
+    with respx.mock:
+        respx.get(f.url).respond(json=meta)
+        respx.get(f"{f.url}/query", params={"returnCountOnly": "true"}).respond(json={"count": 2})
+        respx.get(f"{f.url}/query").respond(json={"type": "FeatureCollection", "features": [
+            {"type": "Feature", **x} for x in s.SECTORES]})
+        r = cargar_desde_arcgis(conn, f, registro["dominio_estrato"],
+                                ClienteArcGIS(httpx.Client(), pausa_entre_paginas=0, dormir=lambda _: None))
+    assert r["estado"] == "publicada"
+    p = {x["fuente"]: x for x in fichas.procedencia(conn)}["mr_sector"]
+    assert p["origen"] == "servicio_oficial" and p["oficial"] and p["registros"] == 2
+
+
+def test_api_procedencia_de_la_demostracion(datos_cargados, api_cliente):
+    filas = {x["fuente"]: x for x in api_cliente.get("/api/procedencia").json()["fuentes"]}
+    assert filas["mr_localidad"]["origen"] == "sintetico" and not filas["mr_localidad"]["oficial"]
+    assert filas["sdp_estrato_manzana_2019_rest"]["origen"] == "sin_version"
+
+
+def test_retirar_sinteticos_no_borra_ni_toca_reales(conn, registro):
+    from territorial.carga import retirar_sinteticos
+    real = _cargar_real(conn, registro, "mr_localidad", s.LOCALIDADES)
+    sint = _cargar(conn, registro, "mr_sector", s.SECTORES)
+    antes = conn.execute("SELECT count(*) AS n FROM geo.objeto").fetchone()["n"]
+    assert retirar_sinteticos(conn) == [{"fuente": "mr_sector", "version_retirada": sint["version_id"]}]
+    assert _publicada(conn, "mr_localidad") == real["version_id"]
+    assert _publicada(conn, "mr_sector") is None
+    assert conn.execute("SELECT estado FROM geo.version WHERE version_id=%s", (sint["version_id"],)).fetchone()["estado"] == "retirada"
+    assert conn.execute("SELECT count(*) AS n FROM geo.objeto").fetchone()["n"] == antes
+    assert not next(f for f in fichas.estado_fuentes(conn) if f["id"] == "mr_sector")["habilitada"]

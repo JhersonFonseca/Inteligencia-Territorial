@@ -6,7 +6,14 @@ Guarda capturas y un informe JSON en la carpeta de salida.
 
 Uso:
     pip install playwright && python -m playwright install chromium
-    python herramientas/verificar_mapa.py --url http://localhost:8000 --buscar CHAPINERO --salida evidencia/real
+    python herramientas/verificar_mapa.py --datos reales --mapa-base real --buscar CHAPINERO \
+        --salida docs/evidencia/datos_reales
+
+Tipo de evidencia (--datos, obligatorio):
+    reales      solo aprueba si cada capa procede de un servicio oficial o de una descarga verificada,
+                ninguna versión es sintética y la interfaz no muestra la franja de datos sintéticos.
+                Exige --mapa-base real y una carpeta de salida que no sea de evidencia sintética.
+    sinteticos  solo aprueba si los datos están marcados como sintéticos y la franja es visible.
 
 Modos del mapa base (--mapa-base):
     real          las teselas se piden a OpenStreetMap normalmente (uso en tu computador)
@@ -25,8 +32,15 @@ import re
 import struct
 import sys
 import zlib
+import subprocess
+import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
+
+RAIZ = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(RAIZ))
+from territorial import verificacion  # noqa: E402  (solo reglas; no necesita base de datos)
 
 HOST_TESELAS = "tile.openstreetmap.org"
 
@@ -57,6 +71,40 @@ def clasificar(url: str, modo: str, resultado=None) -> str:
     return "externo"
 
 
+def api_json(base: str, ruta: str) -> tuple[int, dict]:
+    try:
+        with urllib.request.urlopen(base.rstrip("/") + ruta, timeout=60) as r:
+            return r.status, json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.loads(e.read().decode("utf-8"))
+        except ValueError:
+            return e.code, {}
+
+
+def commit_actual() -> str | None:
+    try:
+        return subprocess.run(["git", "-C", str(RAIZ), "rev-parse", "--short", "HEAD"], capture_output=True,
+                              text=True, timeout=10).stdout.strip() or None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def validar_argumentos(args) -> str | None:
+    """Impide producir evidencia engañosa. Devuelve el motivo del rechazo o None."""
+    carpeta = str(Path(args.salida)).lower().replace("\\", "/")
+    if args.datos == "reales":
+        if args.mapa_base != "real":
+            return "La evidencia con datos reales exige --mapa-base real (sin bloqueos ni teselas simuladas)."
+        if "sintetic" in carpeta:
+            return "La evidencia con datos reales no puede guardarse en una carpeta de evidencia sintética."
+        if args.buscar.lower().startswith("sintetic"):
+            return "Con datos reales, indica en --buscar una unidad real (p. ej. CHAPINERO)."
+    elif "real" in carpeta:
+        return "La evidencia sintética no puede guardarse en una carpeta de datos reales."
+    return None
+
+
 async def verificar(args) -> dict:
     from playwright.async_api import async_playwright
 
@@ -67,6 +115,24 @@ async def verificar(args) -> dict:
     def comprobar(nombre: str, ok: bool, detalle: str = "") -> None:
         comprobaciones.append({"comprobacion": nombre, "ok": bool(ok), "detalle": detalle})
         print(f"[{'OK ' if ok else 'FALLA'}] {nombre}{' — ' + detalle if detalle else ''}")
+
+    def comprobar_lista(resultados: list[dict]) -> None:
+        for r in resultados:
+            comprobar(r["comprobacion"], r["ok"], r["detalle"])
+
+    # --- procedencia y habilitación, consultadas a la API antes de abrir el navegador -------------
+    _, salud = api_json(args.url, "/api/salud")
+    _, fuentes = api_json(args.url, "/api/fuentes")
+    _, proc = api_json(args.url, "/api/procedencia")
+    _, capas_api = api_json(args.url, "/api/capas")
+    fuentes, proc = fuentes.get("fuentes", []), proc.get("fuentes", [])
+    print(f"--- Procedencia ({args.datos}) ---")
+    comprobar_lista(verificacion.comprobar_fuentes(args.datos, fuentes, proc))
+    for c in capas_api.get("capas", []):
+        if not c["habilitada"]:
+            codigo, _ = api_json(args.url, f"/api/capas/{c['capa']}/geojson?bbox=-74.5,3.7,-73.95,4.87")
+            comprobar(f"API niega la capa no habilitada {c['capa']}", codigo == 409, f"HTTP {codigo}")
+    print("--- Navegador ---")
 
     async with async_playwright() as p:
         nav = await p.chromium.launch(args=["--use-gl=swiftshader", "--enable-unsafe-swiftshader",
@@ -105,7 +171,8 @@ async def verificar(args) -> dict:
             comprobar("Estado del mapa base", e["base"]["estado"] == esperado_base,
                       f"{e['base']['estado']} (esperado {esperado_base})")
         else:
-            comprobar("Estado del mapa base (informativo)", True, e["base"]["estado"])
+            comprobar("Mapa base real disponible", e["base"]["estado"] in ("disponible", "parcial"),
+                      e["base"]["estado"])
         comprobar("Aviso visible solo si el mapa base falla",
                   aviso_base == (e["base"]["estado"] in ("no_disponible", "sin_respuesta", "parcial")),
                   f"aviso visible: {aviso_base}")
@@ -118,11 +185,8 @@ async def verificar(args) -> dict:
             "mapaTerritorial.queryRenderedFeatures({layers:['localidad-relleno']}).length")
         comprobar("Polígonos de localidad presentes en el lienzo", dibujadas > 0, f"{dibujadas} fragmentos")
 
-        # Advertencia de datos sintéticos coherente con los datos
-        sinteticas = [c["nombre"] for c in e["capas"].values() if c.get("sintetico")]
-        banda = await pagina.is_visible("#aviso-sintetico")
-        comprobar("Advertencia sintética coincide con los datos", banda == bool(sinteticas),
-                  f"capas sintéticas: {sinteticas or 'ninguna'}; franja visible: {banda}")
+        # Procedencia reflejada en la interfaz
+        comprobar_lista(verificacion.comprobar_interfaz(args.datos, e, await pagina.is_visible("#aviso-sintetico")))
 
         # Zoom con los controles
         z0 = await pagina.evaluate("mapaTerritorial.getZoom()")
@@ -144,6 +208,8 @@ async def verificar(args) -> dict:
         await pagina.wait_for_timeout(1200)
         codigo_ficha = await pagina.text_content("#ficha-codigo")
         comprobar("Buscador abre la ficha del resultado", codigo_ficha == codigo_b, f"{nivel_b} {codigo_b}")
+        _, ficha_b = api_json(args.url, f"/api/ficha/{nivel_b}/{codigo_b}")
+        comprobar_lista(verificacion.comprobar_ficha(args.datos, ficha_b, proc, f"{nivel_b} {codigo_b}"))
         resaltada = await pagina.evaluate(
             f"mapaTerritorial.queryRenderedFeatures({{layers:['{nivel_b}-seleccion']}}).length")
         comprobar("Unidad buscada resaltada en el mapa", resaltada > 0)
@@ -177,16 +243,16 @@ async def verificar(args) -> dict:
                 f"document.getElementById('ficha-codigo') && document.getElementById('ficha-codigo').textContent === {json.dumps(punto['codigo'])}",
                 timeout=20000)
             comprobar("Clic en el mapa selecciona la manzana y actualiza la ficha", True, punto["codigo"])
+            _, ficha_m = api_json(args.url, f"/api/ficha/manzana/{punto['codigo']}")
+            comprobar_lista(verificacion.comprobar_ficha(args.datos, ficha_m, proc, f"manzana {punto['codigo']}"))
             await pagina.wait_for_timeout(800)
             resaltada = await pagina.evaluate(
                 "mapaTerritorial.queryRenderedFeatures({layers:['manzana-seleccion']}).length")
             comprobar("Manzana seleccionada resaltada", resaltada > 0)
         await pagina.screenshot(path=str(salida / "3_manzana.png"))
         e = await pagina.evaluate("window.estadoMapa")
-        banda = await pagina.is_visible("#aviso-sintetico")
-        hay_sint = any(c.get("sintetico") for c in e["capas"].values()) or bool(e["seleccion"] and e["seleccion"]["sintetico"])
-        comprobar("Advertencia sintética sigue coherente tras navegar", banda == hay_sint,
-                  f"franja visible: {banda}; datos sintéticos: {hay_sint}")
+        comprobar_lista([dict(r, comprobacion=r["comprobacion"] + " (tras navegar)") for r in
+                         verificacion.comprobar_interfaz(args.datos, e, await pagina.is_visible("#aviso-sintetico"))])
         await nav.close()
 
     # --- clasificación de consola y red ----------------------------------------------------------
@@ -211,7 +277,10 @@ async def verificar(args) -> dict:
         clave = f"{r['categoria']} · {r['resultado']}"
         resumen_red[clave] = resumen_red.get(clave, 0) + 1
     informe = {
+        "tipo_evidencia": {"reales": "datos_oficiales", "sinteticos": "demostracion_sintetica"}[args.datos],
         "fecha": datetime.now().isoformat(timespec="seconds"), "url": args.url,
+        "commit": commit_actual(), "version_api": salud.get("version"), "postgis": salud.get("postgis"),
+        "procedencia": proc,
         "modo_mapa_base": args.mapa_base,
         "nota_modo": {"simulado": "Teselas grises generadas localmente; no es cartografía real.",
                       "bloqueado": "Teselas bloqueadas a propósito por la prueba.",
@@ -232,12 +301,32 @@ async def verificar(args) -> dict:
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--datos", choices=["reales", "sinteticos"], required=True,
+                   help="Tipo de evidencia: reales (exige procedencia oficial) o sinteticos (demostración).")
     p.add_argument("--url", default="http://localhost:8000/")
     p.add_argument("--mapa-base", choices=["real", "bloqueado", "sin-respuesta", "simulado"], default="real")
     p.add_argument("--buscar", default="sintetico", help="Texto para el buscador (p. ej. CHAPINERO con datos reales).")
     p.add_argument("--zoom-manzanas", type=float, default=16.0)
     p.add_argument("--salida", default="evidencia")
-    informe = asyncio.run(verificar(p.parse_args()))
+    args = p.parse_args()
+    if motivo := validar_argumentos(args):
+        print(f"RECHAZADO: {motivo}")
+        return 2
+    try:
+        informe = asyncio.run(verificar(args))
+    except Exception as e:  # noqa: BLE001 — la causa queda registrada, nunca se sustituyen datos
+        causa = (f"No se pudo conectar con la API en {args.url}: ¿está levantado Docker Compose?"
+                 if isinstance(e, urllib.error.URLError) else
+                 "Un paso no terminó a tiempo (revisa la última captura y la consola)."
+                 if type(e).__name__ == "TimeoutError" else "Error inesperado durante la verificación.")
+        informe = {"tipo_evidencia": {"reales": "datos_oficiales", "sinteticos": "demostracion_sintetica"}[args.datos],
+                   "fecha": datetime.now().isoformat(timespec="seconds"), "url": args.url, "commit": commit_actual(),
+                   "aprobado": False, "interrumpida": True, "causa": causa,
+                   "error": f"{type(e).__name__}: {str(e)[:500]}"}
+        Path(args.salida).mkdir(parents=True, exist_ok=True)
+        (Path(args.salida) / "informe.json").write_text(json.dumps(informe, ensure_ascii=False, indent=2),
+                                                         encoding="utf-8")
+        print(f"\nVERIFICACIÓN INTERRUMPIDA: {causa}\n{informe['error']}\nInforme: {Path(args.salida) / 'informe.json'}")
     return 0 if informe["aprobado"] else 1
 
 

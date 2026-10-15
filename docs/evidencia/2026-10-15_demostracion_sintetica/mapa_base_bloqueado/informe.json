@@ -1,6 +1,123 @@
 {
-  "fecha": "2026-10-15T11:11:18",
+  "tipo_evidencia": "demostracion_sintetica",
+  "fecha": "2026-10-15T11:28:05",
   "url": "http://localhost:8765/",
+  "commit": "f81b364",
+  "version_api": "0.1.0",
+  "postgis": "POSTGIS=\"3.4.2 c19ce56\" [EXTENSION] PGSQL=\"160\" GEOS=\"3.12.1-CAPI-1.18.1\" PROJ=\"9.4.0 NETWORK_ENABLED=OFF URL_ENDPOINT=https://cdn.proj.org USER_WRITABLE_DIRECTORY=/var/lib/postgresql/.local/share/proj DATABASE_PATH=/usr/share/proj/proj.db\" LIBXML=\"2.9.14\" LIBJSON=\"0.17\" LIBPROTOBUF=\"1.4.1\" WAGYU=\"0.5.0 (Internal)\"",
+  "procedencia": [
+    {
+      "fuente": "mr_localidad",
+      "habilitada": true,
+      "motivos": [],
+      "version_publicada": 1,
+      "origen": "sintetico",
+      "detalle": "Versión cargada con datos inventados de prueba.",
+      "oficial": false,
+      "sintetico": true,
+      "registros": 1,
+      "registros_esperados": 1,
+      "hash_contenido": "43e6d4b9567c4cf710ccd665c069c8488fa65f7306317d57689e7f28fd26022c",
+      "publicada_en": "2026-10-15T10:20:34.420531-05:00"
+    },
+    {
+      "fuente": "mr_lote_manzana",
+      "habilitada": true,
+      "motivos": [],
+      "version_publicada": 6,
+      "origen": "sintetico",
+      "detalle": "Versión cargada con datos inventados de prueba.",
+      "oficial": false,
+      "sintetico": true,
+      "registros": 3,
+      "registros_esperados": 3,
+      "hash_contenido": "85a16cad4b8304661b9c4647493897fbfd089510b5aafdae4bc5692632ad379a",
+      "publicada_en": "2026-10-15T10:20:34.450060-05:00"
+    },
+    {
+      "fuente": "mr_manzana",
+      "habilitada": true,
+      "motivos": [],
+      "version_publicada": 4,
+      "origen": "sintetico",
+      "detalle": "Versión cargada con datos inventados de prueba.",
+      "oficial": false,
+      "sintetico": true,
+      "registros": 4,
+      "registros_esperados": 4,
+      "hash_contenido": "031d927af11f6001bfa60f0ed95b41f5a4a6cde9024dab59c0f97aaceb7f360c",
+      "publicada_en": "2026-10-15T10:20:34.441927-05:00"
+    },
+    {
+      "fuente": "mr_sector",
+      "habilitada": true,
+      "motivos": [],
+      "version_publicada": 3,
+      "origen": "sintetico",
+      "detalle": "Versión cargada con datos inventados de prueba.",
+      "oficial": false,
+      "sintetico": true,
+      "registros": 2,
+      "registros_esperados": 2,
+      "hash_contenido": "414a1c6e3b763dab828aafad5bd12eb8fbb9fc5a7a3841a670ef26aa068ff72e",
+      "publicada_en": "2026-10-15T10:20:34.438300-05:00"
+    },
+    {
+      "fuente": "mr_upl",
+      "habilitada": true,
+      "motivos": [],
+      "version_publicada": 2,
+      "origen": "sintetico",
+      "detalle": "Versión cargada con datos inventados de prueba.",
+      "oficial": false,
+      "sintetico": true,
+      "registros": 1,
+      "registros_esperados": 1,
+      "hash_contenido": "a82bd690a2f76ec09717532eb03d15c2ae2bc913cf577ef2d9117eb86d1cdc59",
+      "publicada_en": "2026-10-15T10:20:34.434486-05:00"
+    },
+    {
+      "fuente": "sdp_estrato_manzana_2019_rest",
+      "habilitada": false,
+      "motivos": [
+        "Licencia no verificada.",
+        "Pendiente bloqueante: La licencia del servicio no figura en el servicio ni en una ficha identificada.",
+        "No hay una versión que haya pasado todas las validaciones bloqueantes."
+      ],
+      "version_publicada": null,
+      "origen": "sin_version",
+      "detalle": "No hay versión publicada.",
+      "oficial": false
+    },
+    {
+      "fuente": "sdp_estrato_manzana_2025",
+      "habilitada": true,
+      "motivos": [],
+      "version_publicada": 5,
+      "origen": "sintetico",
+      "detalle": "Versión cargada con datos inventados de prueba.",
+      "oficial": false,
+      "sintetico": true,
+      "registros": 3,
+      "registros_esperados": 3,
+      "hash_contenido": "29870d1dcd77ec660114e67ab74267255a8096a90a2edb24cd1096e62bcee12e",
+      "publicada_en": "2026-10-15T10:20:34.446439-05:00"
+    },
+    {
+      "fuente": "sdp_estrato_predio_2026",
+      "habilitada": true,
+      "motivos": [],
+      "version_publicada": 7,
+      "origen": "sintetico",
+      "detalle": "Versión cargada con datos inventados de prueba.",
+      "oficial": false,
+      "sintetico": true,
+      "registros": 19,
+      "registros_esperados": null,
+      "hash_contenido": "454cc0a9f63947c1a5d6b79b274171382bf613f95b23032162fc9af33ac0f7da",
+      "publicada_en": "2026-10-15T10:20:34.453463-05:00"
+    }
+  ],
   "modo_mapa_base": "bloqueado",
   "nota_modo": "Teselas bloqueadas a propósito por la prueba.",
   "estado_final": {
@@ -11,7 +128,7 @@
     "base": {
       "estado": "no_disponible",
       "teselasOk": 0,
-      "teselasFallidas": 90,
+      "teselasFallidas": 93,
       "ultimoError": "Failed to fetch"
     },
     "capas": {
@@ -96,6 +213,21 @@
   },
   "comprobaciones": [
     {
+      "comprobacion": "Fuentes con licencia o validaciones pendientes siguen deshabilitadas",
+      "ok": true,
+      "detalle": "deshabilitadas: ['sdp_estrato_manzana_2019_rest']"
+    },
+    {
+      "comprobacion": "La demostración está marcada como sintética en la base",
+      "ok": true,
+      "detalle": "versiones sintéticas: ['mr_localidad', 'mr_lote_manzana', 'mr_manzana', 'mr_sector', 'mr_upl', 'sdp_estrato_manzana_2025', 'sdp_estrato_predio_2026']"
+    },
+    {
+      "comprobacion": "API niega la capa no habilitada estrato_2019",
+      "ok": true,
+      "detalle": "HTTP 409"
+    },
+    {
       "comprobacion": "Motor del mapa inicializado",
       "ok": true,
       "detalle": "MapLibre 4.7.1 listo"
@@ -126,9 +258,9 @@
       "detalle": "1 fragmentos"
     },
     {
-      "comprobacion": "Advertencia sintética coincide con los datos",
+      "comprobacion": "Franja de datos sintéticos visible",
       "ok": true,
-      "detalle": "capas sintéticas: ['Localidad', 'Unidad de Planeamiento Local (UPL)', 'Sector catastral', 'Manzana', 'Estrato asignado por manzana (2025)']; franja visible: True"
+      "detalle": "franja visible: True; capas sintéticas: ['Localidad', 'Unidad de Planeamiento Local (UPL)', 'Sector catastral', 'Manzana', 'Estrato asignado por manzana (2025)']"
     },
     {
       "comprobacion": "Botones de zoom",
@@ -141,6 +273,11 @@
       "detalle": "sector S0001"
     },
     {
+      "comprobacion": "Ficha sector S0001 marcada como sintética",
+      "ok": true,
+      "detalle": ""
+    },
+    {
       "comprobacion": "Unidad buscada resaltada en el mapa",
       "ok": true,
       "detalle": ""
@@ -151,19 +288,24 @@
       "detalle": "M00000001"
     },
     {
+      "comprobacion": "Ficha manzana M00000001 marcada como sintética",
+      "ok": true,
+      "detalle": ""
+    },
+    {
       "comprobacion": "Manzana seleccionada resaltada",
       "ok": true,
       "detalle": ""
     },
     {
-      "comprobacion": "Advertencia sintética sigue coherente tras navegar",
+      "comprobacion": "Franja de datos sintéticos visible (tras navegar)",
       "ok": true,
-      "detalle": "franja visible: True; datos sintéticos: True"
+      "detalle": "franja visible: True; capas sintéticas: ['Localidad', 'Unidad de Planeamiento Local (UPL)', 'Sector catastral', 'Manzana', 'Estrato asignado por manzana (2025)']"
     },
     {
       "comprobacion": "Sin errores reales de red",
       "ok": true,
-      "detalle": "0 reales, 125 bloqueadas a propósito, 0 teselas canceladas por el mapa al moverse"
+      "detalle": "0 reales, 136 bloqueadas a propósito, 0 teselas canceladas por el mapa al moverse"
     },
     {
       "comprobacion": "Sin errores reales de consola",
@@ -175,12 +317,12 @@
   "red_resumen": {
     "recurso_local · 200": 5,
     "api · 200": 9,
-    "mapa_base_bloqueado_a_proposito · net::ERR_BLOCKED_BY_CLIENT.Inspector": 91,
-    "mapa_base_bloqueado_a_proposito · net::ERR_ABORTED": 34
+    "mapa_base_bloqueado_a_proposito · net::ERR_BLOCKED_BY_CLIENT.Inspector": 94,
+    "mapa_base_bloqueado_a_proposito · net::ERR_ABORTED": 42
   },
   "red_errores_reales": [],
   "consola_errores_reales": [],
-  "consola_errores_deliberados": 91,
+  "consola_errores_deliberados": 94,
   "consola_avisos": [
     {
       "tipo": "warning",
