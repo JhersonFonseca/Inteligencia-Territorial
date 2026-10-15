@@ -169,3 +169,44 @@ def test_api_sin_datos_muestra_capas_no_validadas(conn, api_cliente):
     assert all(not c["habilitada"] for c in capas)
     r = api_cliente.get("/api/ficha/localidad/99")
     assert r.status_code == 409
+
+
+def _cargar_real(conn, registro, fid, feats):
+    """Simula una carga 'real' (sintetico=False) con geometrías de prueba, solo para probar la protección."""
+    campos = sorted({k for x in feats for k in x["properties"]})
+    return cargar_features(conn, registro["fuentes"][fid], feats, campos, registro["dominio_estrato"],
+                           len(feats), [], sintetico=False)
+
+
+def test_sintetico_no_reemplaza_una_version_real(conn, registro):
+    real = _cargar_real(conn, registro, "mr_sector", s.SECTORES)
+    r = _cargar(conn, registro, "mr_sector", s.SECTORES)
+    assert r["estado"] == "rechazada" and "no la reemplazan" in r["motivo"]
+    assert _publicada(conn, "mr_sector") == real["version_id"]
+    assert conn.execute("SELECT count(*) AS n FROM geo.version WHERE fuente_id='mr_sector'").fetchone()["n"] == 1
+
+
+def test_demo_sintetica_se_niega_si_hay_datos_reales(conn, registro, tmp_path):
+    from territorial.sinteticos import cargar_demo
+    _cargar_real(conn, registro, "mr_localidad", s.LOCALIDADES)
+    antes = conn.execute("SELECT count(*) AS n FROM geo.version").fetchone()["n"]
+    with pytest.raises(RuntimeError, match="ya hay datos reales"):
+        cargar_demo(conn, registro, tmp_path)
+    assert conn.execute("SELECT count(*) AS n FROM geo.version").fetchone()["n"] == antes
+
+
+def test_dato_real_reemplaza_al_sintetico_y_se_marca(conn, registro):
+    sint = _cargar(conn, registro, "mr_sector", s.SECTORES)
+    real = _cargar_real(conn, registro, "mr_sector", s.SECTORES)
+    assert real["estado"] == "publicada" and real["reemplaza"] == sint["version_id"]
+    f = next(x for x in fichas.estado_fuentes(conn) if x["id"] == "mr_sector")
+    assert f["sintetico"] is False
+
+
+def test_pagina_usa_maplibre_local_y_no_un_cdn(api_cliente):
+    html = api_cliente.get("/").text
+    assert "/web/vendor/maplibre-gl-4.7.1/maplibre-gl.js" in html
+    assert 'src="http' not in html and 'href="http' not in html  # sin scripts ni estilos externos
+    r = api_cliente.get("/web/vendor/maplibre-gl-4.7.1/maplibre-gl.js")
+    assert r.status_code == 200 and len(r.content) > 500_000
+    assert api_cliente.get("/web/vendor/maplibre-gl-4.7.1/LICENSE.txt").status_code == 200

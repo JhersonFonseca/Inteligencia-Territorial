@@ -24,6 +24,27 @@ from .registro import Fuente
 LOTE_INSERCION = 1000
 
 
+# --- protección de datos reales -----------------------------------------------------------------
+def version_real_publicada(conn, fuente_id: str) -> int | None:
+    """Versión publicada NO sintética de la fuente, si existe."""
+    fila = conn.execute(
+        """SELECT v.version_id FROM geo.fuente f JOIN geo.version v ON v.version_id = f.version_publicada
+           WHERE f.fuente_id = %s AND NOT v.sintetico""", (fuente_id,)).fetchone()
+    return fila["version_id"] if fila else None
+
+
+def _rechazo_sintetico(conn, fuente_id: str, sintetico: bool) -> dict[str, Any] | None:
+    """Los datos sintéticos nunca reemplazan una versión real publicada."""
+    if not sintetico:
+        return None
+    real = version_real_publicada(conn, fuente_id)
+    if real is None:
+        return None
+    return {"version_id": None, "estado": "rechazada",
+            "motivo": (f"{fuente_id} tiene publicada la versión real {real}; los datos sintéticos no la "
+                       "reemplazan. No se creó ninguna versión.")}
+
+
 # --- versiones ---------------------------------------------------------------------------------
 def _nueva_version(conn: psycopg.Connection, fuente_id: str, sintetico: bool) -> int:
     return conn.execute(
@@ -138,6 +159,8 @@ def cargar_features(conn, fuente: Fuente, features: list[dict[str, Any]], campos
                     dominio: dict[int, str], esperados: int | None, bitacora: list[dict[str, Any]],
                     hash_contenido: str | None = None, con_geometria: bool = True,
                     srid_origen: int = 4326, sintetico: bool = False) -> dict[str, Any]:
+    if rechazo := _rechazo_sintetico(conn, fuente.id, sintetico):
+        return rechazo
     version_id = _nueva_version(conn, fuente.id, sintetico)
     try:
         resultados = [v.campos_presentes(fuente.campos.values(), campos_disponibles)]
@@ -195,6 +218,8 @@ def cargar_desde_geojson(conn, fuente: Fuente, ruta, dominio: dict[int, str], sr
 
 def cargar_desde_csv_zip(conn, fuente: Fuente, ruta, dominio: dict[int, str],
                          sintetico: bool = False) -> dict[str, Any]:
+    if rechazo := _rechazo_sintetico(conn, fuente.id, sintetico):
+        return rechazo
     version_id = _nueva_version(conn, fuente.id, sintetico)
     try:
         conteos, columnas, filas = contar_lote_estrato_csv_zip(ruta, fuente.campos["lote"],

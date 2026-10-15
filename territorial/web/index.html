@@ -4,17 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Inteligencia territorial · Bogotá</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <!-- MapLibre se sirve desde el propio proyecto (licencia BSD-3 en vendor/): no depende de un CDN. -->
+  <link rel="stylesheet" href="/web/vendor/maplibre-gl-4.7.1/maplibre-gl.css">
   <link rel="stylesheet" href="/web/estilos.css">
 </head>
 <body>
-  <div id="aviso-sintetico" class="aviso aviso-sintetico" hidden>
+  <div id="aviso-sintetico" class="aviso aviso-sintetico" role="alert" hidden>
     DATOS SINTÉTICOS DE PRUEBA — no representan información real de Bogotá.
+    <span id="aviso-sintetico-capas"></span>
   </div>
   <header>
     <h1>Inteligencia territorial · Bogotá <span class="version">v0.1</span></h1>
     <form id="buscador" autocomplete="off">
-      <input id="q" type="search" placeholder="Buscar localidad, UPL, sector o código de manzana" minlength="2">
+      <input id="q" type="search" placeholder="Buscar localidad, UPL, sector o código de manzana" minlength="2"
+             aria-label="Buscar unidad territorial">
       <ul id="resultados" hidden></ul>
     </form>
   </header>
@@ -22,16 +25,21 @@
     <aside id="panel-capas">
       <h2>Capas</h2>
       <div id="capas"></div>
-      <p class="nota">Las manzanas y el estrato se cargan al acercar el mapa (zoom 15 o más).</p>
+      <h2>Estado del mapa</h2>
+      <ul id="estado-mapa" class="estado"></ul>
       <h2>Fuentes no habilitadas</h2>
       <ul id="no-habilitadas"></ul>
     </aside>
-    <div id="mapa"></div>
+    <div id="contenedor-mapa">
+      <div id="mapa"></div>
+      <div id="aviso-mapa-base" class="aviso-mapa" role="status" hidden></div>
+      <div id="aviso-mapa-error" class="aviso-mapa aviso-mapa-grave" role="alert" hidden></div>
+    </div>
     <aside id="panel-ficha">
       <p class="vacio">Selecciona una unidad territorial en el mapa o con el buscador.</p>
     </aside>
   </main>
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="/web/vendor/maplibre-gl-4.7.1/maplibre-gl.js"></script>
   <script src="/web/app.js"></script>
 </body>
 </html>

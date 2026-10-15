@@ -50,7 +50,16 @@ def cargar_demo(conn, registro, carpeta) -> list[dict]:
     import zipfile
     from .carga import cargar_desde_csv_zip, cargar_features
 
+    from .carga import version_real_publicada
+
     f, dom = registro["fuentes"], registro["dominio_estrato"]
+    destinos = ["mr_localidad", "mr_upl", "mr_sector", "mr_manzana", "sdp_estrato_manzana_2025",
+                "mr_lote_manzana", "sdp_estrato_predio_2026"]
+    reales = {fid: v for fid in destinos if (v := version_real_publicada(conn, fid)) is not None}
+    if reales:
+        # Todo o nada: no se mezcla una demostración parcial con datos reales.
+        raise RuntimeError("La demostración sintética no se carga porque ya hay datos reales publicados "
+                           f"en: {', '.join(f'{k} (versión {v})' for k, v in reales.items())}.")
     salida = []
     for fid, feats, con_geom in [("mr_localidad", LOCALIDADES, True), ("mr_upl", UPLS, True),
                                  ("mr_sector", SECTORES, True), ("mr_manzana", MANZANAS, True),

@@ -105,7 +105,10 @@ def main(argv: list[str] | None = None) -> int:
             if not config.permitir_sinteticos():
                 sys.exit("La demostración sintética requiere TERRITORIAL_PERMITIR_SINTETICOS=1.")
             from .sinteticos import cargar_demo
-            _imprimir(cargar_demo(conn, registro, config.carpeta_datos()))
+            try:
+                _imprimir(cargar_demo(conn, registro, config.carpeta_datos()))
+            except RuntimeError as e:
+                sys.exit(str(e))
         elif args.comando == "consistencia":
             _imprimir(fichas.consistencia(conn))
     finally:

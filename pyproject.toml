@@ -28,7 +28,7 @@ build-backend = "setuptools.build_meta"
 include = ["territorial*"]
 
 [tool.setuptools.package-data]
-territorial = ["sql/*.sql", "fuentes.yaml", "web/*"]
+territorial = ["sql/*.sql", "fuentes.yaml", "web/*", "web/vendor/*/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

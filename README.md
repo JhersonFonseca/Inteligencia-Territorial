@@ -10,7 +10,10 @@ tiene acceso a los servidores de Bogotá.
 
 ## Qué hace
 
-- Mapa de Bogotá en el navegador (MapLibre + mapa base de OpenStreetMap).
+- Mapa de Bogotá en el navegador (MapLibre servido desde el propio proyecto + mapa base de
+  OpenStreetMap). Si el mapa base no está disponible o no responde, las capas se dibujan sobre un
+  fondo neutro y un aviso lo explica; el panel *Estado del mapa* muestra el estado de cada capa
+  (ver `docs/mapa.md`).
 - Selección de localidad, UPL, sector o manzana con un clic o con el buscador.
 - Ficha con tres bloques **separados**, cada uno con su fuente, fecha, licencia, método y advertencias:
   1. Estrato asignado por manzana (2025).
@@ -98,7 +101,8 @@ docker compose run --rm -e TERRITORIAL_PERMITIR_SINTETICOS=1 api territorial dem
 
 Aparece una "Localidad Sintética" con cuatro manzanas inventadas cerca del centro del mapa, y una
 franja roja avisa que los datos no son reales. Al cargar después los datos oficiales, cada fuente
-real reemplaza a su versión sintética.
+real reemplaza a su versión sintética. Al revés no es posible: si una fuente ya tiene datos reales
+publicados, la demostración se niega a cargarse y ningún dato sintético los reemplaza.
 
 ## Pruebas
 
@@ -124,11 +128,10 @@ docker compose exec db psql -U territorial -d territorial_pruebas -c "CREATE EXT
 | Grupo | Resultado | Qué cubre |
 |---|---|---|
 | Unitarias (sin red ni base) | 27 aprobadas | Paginación por `resultOffset` ordenada por OID (OID que no empiezan en 1), tope de 2000 por página, pérdida detectada por conteo, reintentos ante 5xx y fallos de red, sin reintento ante 4xx, rechazo de capas solo visuales, campos inexistentes y capas sin paginación; validaciones; habilitación por licencia; advertencias de antigüedad; lectura del CSV sin conservar el CHIP; SRID del GeoJSON; descarga incompleta |
-| Base de datos (PostgreSQL 16 + PostGIS 3.4) | 17 aprobadas | Migración idempotente; publicación y reemplazo; cuarentena por pérdida, duplicados, estrato fuera de dominio, coordenadas fuera de Bogotá, campo faltante y error inesperado, conservando siempre la versión anterior; corrección de geometrías inválidas; fuente con licencia pendiente que carga pero no se habilita; agregación lote → manzana; fichas por manzana, sector y localidad; informes de consistencia; API completa |
+| Base de datos (PostgreSQL 16 + PostGIS 3.4) | 21 aprobadas | Migración idempotente; los datos sintéticos no reemplazan versiones reales; la página no usa recursos externos; publicación y reemplazo; cuarentena por pérdida, duplicados, estrato fuera de dominio, coordenadas fuera de Bogotá, campo faltante y error inesperado, conservando siempre la versión anterior; corrección de geometrías inválidas; fuente con licencia pendiente que carga pero no se habilita; agregación lote → manzana; fichas por manzana, sector y localidad; informes de consistencia; API completa |
 | Integración con servicios oficiales | **No ejecutadas** | El entorno de desarrollo no tiene acceso a los servidores de Bogotá. Se ejecutan en tu computador (lista abajo) |
 
-Además se verificó en un navegador sin interfaz que el mapa carga las capas, el buscador abre la
-ficha y el clic en el mapa selecciona la unidad (con datos sintéticos).
+| Navegador (`herramientas/verificar_mapa.py`) | 15/15 en cada uno de los 3 escenarios del mapa base | Motor del mapa, estado y aviso del mapa base, capas dibujadas sin mapa base, zoom, buscador, clic sobre una manzana, ficha, resaltado, advertencia sintética y clasificación de errores de consola y red. Solo con datos sintéticos; detalle y evidencia en `docs/mapa.md` |
 
 Docker Compose no se pudo probar en el entorno de desarrollo (no hay Docker allí). Es la primera
 validación de la lista.
@@ -140,7 +143,7 @@ Anota el resultado de cada una; con eso se actualiza `fuentes.yaml` y se cierran
 1. **Docker Compose arranca:** `docker compose up -d --build`, luego `docker compose ps` (los dos
    servicios en *running*, la base en *healthy*) y http://localhost:8000/api/salud con
    `"estado": "ok"` y una versión de PostGIS.
-2. **Pruebas locales:** `docker compose run --rm api pytest -v` termina con 44 aprobadas.
+2. **Pruebas locales:** `docker compose run --rm api pytest -v` termina con 48 aprobadas.
 3. **Servicios oficiales:** `docker compose run --rm api pytest -m red -v -s`. Revisa en la salida:
    - Cada capa del Mapa de Referencia permite consultas, tiene los campos registrados y paginación.
    - La capa histórica de 2019 sigue teniendo 45 051 manzanas y la suma por estrato es igual al total.
@@ -158,8 +161,10 @@ Anota el resultado de cada una; con eso se actualiza `fuentes.yaml` y se cierran
    - Los lotes 2026 con relación lote–manzana.
    - La coincidencia entre el estrato 2025 de cada manzana y el estrato más frecuente de sus predios
      2026.
-6. **Revisión visual:** abre http://localhost:8000, busca una localidad, acerca el mapa hasta ver las
-   manzanas (zoom 15) y compara la ficha de dos o tres manzanas con el visor oficial de Mapas Bogotá.
+6. **Mapa con datos reales:** ejecuta el escenario 2 de `docs/mapa.md` (verificación automática
+   con el mapa base real). Luego abre http://localhost:8000, busca una localidad, acerca el mapa hasta
+   ver las manzanas (zoom 15) y compara la ficha de dos o tres manzanas con el visor oficial de Mapas
+   Bogotá.
 7. **Visor l=22935:** en el navegador, abre el mapa de estratificación de Mapas Bogotá con las
    herramientas de desarrollo (F12 → Red) y anota la URL del servicio que consulta. Sirve para
    confirmar a qué servicio corresponde esa capa (sigue pendiente).
@@ -202,7 +207,9 @@ territorial/
   api.py            API FastAPI y servidor del mapa
   cli.py            comando `territorial`
   sinteticos.py     datos inventados para pruebas y demostración
-  web/              mapa (HTML, JS y CSS sin compilación)
+  web/              mapa (HTML, JS y CSS sin compilación; MapLibre 4.7.1 en web/vendor)
+herramientas/       verificación automática del mapa en un navegador
+docs/               comportamiento del mapa y evidencia de las verificaciones
 tests/              pruebas unitarias, de base de datos (bd) e integración (red)
 docker/initdb/      crea la base de pruebas al iniciar Docker Compose por primera vez
 ```

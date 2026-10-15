@@ -1,0 +1,189 @@
+{
+  "fecha": "2026-10-15T11:11:37",
+  "url": "http://localhost:8765/",
+  "modo_mapa_base": "sin-respuesta",
+  "nota_modo": "Teselas retenidas a propósito sin respuesta.",
+  "estado_final": {
+    "motor": {
+      "estado": "listo",
+      "detalle": "MapLibre 4.7.1 listo"
+    },
+    "base": {
+      "estado": "sin_respuesta",
+      "teselasOk": 0,
+      "teselasFallidas": 0,
+      "ultimoError": ""
+    },
+    "capas": {
+      "localidad": {
+        "nombre": "Localidad",
+        "habilitada": true,
+        "visible": true,
+        "estado": "cargada",
+        "n": 1,
+        "sintetico": true,
+        "truncada": false,
+        "detalle": ""
+      },
+      "upl": {
+        "nombre": "Unidad de Planeamiento Local (UPL)",
+        "habilitada": true,
+        "visible": false,
+        "estado": "oculta",
+        "n": 0,
+        "sintetico": true,
+        "truncada": false,
+        "detalle": ""
+      },
+      "sector": {
+        "nombre": "Sector catastral",
+        "habilitada": true,
+        "visible": true,
+        "estado": "cargada",
+        "n": 2,
+        "sintetico": true,
+        "truncada": false,
+        "detalle": ""
+      },
+      "manzana": {
+        "nombre": "Manzana",
+        "habilitada": true,
+        "visible": true,
+        "estado": "cargada",
+        "n": 2,
+        "sintetico": true,
+        "truncada": false,
+        "detalle": ""
+      },
+      "estrato_2025": {
+        "nombre": "Estrato asignado por manzana (2025)",
+        "habilitada": true,
+        "visible": false,
+        "estado": "oculta",
+        "n": 0,
+        "sintetico": true,
+        "truncada": false,
+        "detalle": ""
+      },
+      "estrato_2019": {
+        "nombre": "Estratificación por manzana, servicio histórico (dato de 2019)",
+        "habilitada": false,
+        "visible": false,
+        "estado": "no_habilitada",
+        "n": 0,
+        "sintetico": false,
+        "truncada": false,
+        "detalle": ""
+      }
+    },
+    "zoom": 16,
+    "seleccion": {
+      "nivel": "manzana",
+      "codigo": "M00000001",
+      "nombre": null,
+      "sintetico": true
+    },
+    "sinteticas": [
+      "Localidad",
+      "Unidad de Planeamiento Local (UPL)",
+      "Sector catastral",
+      "Manzana",
+      "Estrato asignado por manzana (2025)",
+      "ficha seleccionada"
+    ],
+    "errores": [],
+    "listo": true
+  },
+  "comprobaciones": [
+    {
+      "comprobacion": "Motor del mapa inicializado",
+      "ok": true,
+      "detalle": "MapLibre 4.7.1 listo"
+    },
+    {
+      "comprobacion": "Estado del mapa base",
+      "ok": true,
+      "detalle": "sin_respuesta (esperado sin_respuesta)"
+    },
+    {
+      "comprobacion": "Aviso visible solo si el mapa base falla",
+      "ok": true,
+      "detalle": "aviso visible: True"
+    },
+    {
+      "comprobacion": "Fondo neutro definido bajo el mapa base",
+      "ok": true,
+      "detalle": "#e9ebe6"
+    },
+    {
+      "comprobacion": "Capa de localidades dibujada aunque falte el mapa base",
+      "ok": true,
+      "detalle": "1 polígonos"
+    },
+    {
+      "comprobacion": "Polígonos de localidad presentes en el lienzo",
+      "ok": true,
+      "detalle": "1 fragmentos"
+    },
+    {
+      "comprobacion": "Advertencia sintética coincide con los datos",
+      "ok": true,
+      "detalle": "capas sintéticas: ['Localidad', 'Unidad de Planeamiento Local (UPL)', 'Sector catastral', 'Manzana', 'Estrato asignado por manzana (2025)']; franja visible: True"
+    },
+    {
+      "comprobacion": "Botones de zoom",
+      "ok": true,
+      "detalle": "10.30 → 11.30 → 10.30"
+    },
+    {
+      "comprobacion": "Buscador abre la ficha del resultado",
+      "ok": true,
+      "detalle": "sector S0001"
+    },
+    {
+      "comprobacion": "Unidad buscada resaltada en el mapa",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "comprobacion": "Clic en el mapa selecciona la manzana y actualiza la ficha",
+      "ok": true,
+      "detalle": "M00000001"
+    },
+    {
+      "comprobacion": "Manzana seleccionada resaltada",
+      "ok": true,
+      "detalle": ""
+    },
+    {
+      "comprobacion": "Advertencia sintética sigue coherente tras navegar",
+      "ok": true,
+      "detalle": "franja visible: True; datos sintéticos: True"
+    },
+    {
+      "comprobacion": "Sin errores reales de red",
+      "ok": true,
+      "detalle": "0 reales, 0 bloqueadas a propósito, 58 teselas canceladas por el mapa al moverse"
+    },
+    {
+      "comprobacion": "Sin errores reales de consola",
+      "ok": true,
+      "detalle": ""
+    }
+  ],
+  "aprobado": true,
+  "red_resumen": {
+    "recurso_local · 200": 5,
+    "api · 200": 9,
+    "mapa_base_cancelada_por_el_mapa · net::ERR_ABORTED": 58
+  },
+  "red_errores_reales": [],
+  "consola_errores_reales": [],
+  "consola_errores_deliberados": 0,
+  "consola_avisos": [
+    {
+      "tipo": "warning",
+      "texto": "[mapa] El mapa base no respondió en 8 s."
+    }
+  ]
+}
